@@ -1,0 +1,26 @@
+{
+  "connection": "default",
+  "packages": {
+    "@dp_ui/button": {
+      "css": [
+        "dist/style.css"
+      ],
+      "module": "dist/button.mjs",
+      "types": {
+        "entry": "dpui-types/@dp_ui/button/index.d.ts",
+        "files": [
+          "dpui-types/@dp_ui/button/0.1.3/Button.vue.d.ts",
+          "dpui-types/@dp_ui/button/0.1.3/button.d.ts"
+        ]
+      },
+      "version": "0.1.3"
+    },
+    "@dp_ui_hub/button": {
+      "css": [
+        "dist/style.css"
+      ],
+      "module": "dist/button.mjs",
+      "version": "0.1.3"
+    }
+  }
+}

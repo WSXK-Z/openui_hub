@@ -1,0 +1,32 @@
+{
+  "name": "@dp_ui/hub_vite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "dpui_hub Vite 插件：构建期远程组件接入（dpui-hub:@scope/name）",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/hub-vite.mjs"
+    },
+    "./remote": {
+      "types": "./remote.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "vite build --config build/vite.lib.ts && tsc -p tsconfig.build.json",
+    "test:unit": "vitest run"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.12.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@dp_ui/hub_server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "dpui_hub 托管服务端（Rust/axum）：publish/分发/manifest 校验",
+  "scripts": {
+    "build": "cargo build --release",
+    "dev": "cargo run",
+    "test": "cargo test"
+  }
+}

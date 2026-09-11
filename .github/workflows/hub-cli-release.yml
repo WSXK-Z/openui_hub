@@ -1,0 +1,90 @@
+# dpui CLI 多平台产物构建与发布
+# 触发：workflow_dispatch（Actions 页手动）或推送 tag `cli-v*`
+# 说明：每个平台 job 在原生 runner 上 cargo build，经 scripts/hub-platform-pack.mjs
+#       归集到 packages/dpui_hub_cli/vendor/<os>-<arch>/；merge job 合并全部 vendor
+#       后运行 npm 安装冒烟，再按 input.publish 决定是否 `npm publish`。
+# linux-arm64 暂未纳入（需 cross 容器链），v1 覆盖 win32-x64 / darwin-x64 /
+# darwin-arm64 / linux-x64。
+
+name: hub-cli-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: '发布到 npm（@dp_ui/hub_cli）'
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'cli-v*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: win32-x64
+            os: windows-latest
+          - target: darwin-x64
+            os: macos-13
+          - target: darwin-arm64
+            os: macos-14
+          - target: linux-x64
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile --ignore-scripts
+      # cargo build（release）+ 归集到 vendor/<target>（hub-platform-pack 内部完成）
+      - run: node scripts/hub-platform-pack.mjs --platform ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vendor-${{ matrix.target }}
+          path: packages/dpui_hub_cli/vendor/${{ matrix.target }}
+          retention-days: 1
+
+  merge:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      # 拉取各平台 vendor 并合入单包
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: 组装 vendor
+        run: |
+          for d in artifacts/vendor/*; do
+            target=$(basename "$d")
+            mkdir -p "packages/dpui_hub_cli/vendor/$target"
+            cp -r "$d"/. "packages/dpui_hub_cli/vendor/$target/"
+          done
+          find packages/dpui_hub_cli/vendor -maxdepth 2 -type f | sort
+      - name: 安装冒烟（shim 经 npm 安装后可用）
+        run: |
+          node scripts/hub-platform-pack.mjs --platform linux-x64  # 确保当前平台产物可测
+          pnpm hub:test:cli-install
+      - name: 发布 @dp_ui/hub_cli
+        if: (github.event.inputs.publish == 'true' || startsWith(github.ref, 'refs/tags/cli-v'))
+        working-directory: packages/dpui_hub_cli
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

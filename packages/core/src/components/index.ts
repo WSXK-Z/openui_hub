@@ -1,0 +1,11 @@
+// 组件不再分 ui / behavior，直接按功能分类并列（每个分类目录一个 index.ts 聚合）
+export * from './common'
+export * from './layout'
+export * from './navigation'
+export * from './data-entry'
+export * from './data-display'
+export * from './feedback'
+export * from './auth'
+export * from './provide'
+export * from './lazy'
+export * from './config'

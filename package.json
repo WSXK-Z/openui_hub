@@ -1,0 +1,35 @@
+{
+    "name": "dp_ui-workspace",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "hub:install-cli": "node scripts/hub-platform-pack.mjs && pnpm install --no-frozen-lockfile",
+        "hub:use-cli": "pnpm exec dpui --help",
+        "dev:web": "pnpm --filter dp-ui-playground dev",
+        "type-check": "pnpm --filter @dp_ui/core type-check",
+        "test:unit": "pnpm --filter @dp_ui/core test:unit",
+        "test:e2e": "pnpm --filter dp-ui-playground test:e2e",
+        "lint": "pnpm --filter @dp_ui/core lint",
+        "build:lib": "pnpm --filter @dp_ui/core build:dist",
+        "type-check:schema": "pnpm --filter @dp_ui/schema type-check",
+        "test:schema": "pnpm --filter @dp_ui/schema test:unit",
+        "lint:schema": "pnpm --filter @dp_ui/schema lint",
+        "type-check:chat": "pnpm --filter @dp_ui/chat type-check",
+        "test:chat": "pnpm --filter @dp_ui/chat test:unit",
+        "lint:chat": "pnpm --filter @dp_ui/chat lint",
+        "build:chat": "pnpm --filter @dp_ui/chat build:dist",
+        "hub:build:registry": "pnpm --filter @dp_ui/hub_registry build",
+        "hub:build:server": "pnpm --filter @dp_ui/hub_server build",
+        "hub:build:cli": "pnpm --filter @dp_ui/hub_cli build",
+        "hub:build:cli:platforms": "node scripts/hub-platform-pack.mjs",
+        "hub:test:cli-install": "node scripts/hub-cli-install-smoke.mjs",
+        "hub:build:vite": "pnpm --filter @dp_ui/hub_vite build",
+        "hub:build:runtime": "pnpm --filter @dp_ui/hub_runtime build",
+        "hub:build": "pnpm hub:build:registry && pnpm hub:build:cli && pnpm hub:build:server && pnpm hub:build:vite && pnpm hub:build:runtime",
+        "hub:test": "pnpm --filter @dp_ui/hub_server test && pnpm --filter @dp_ui/hub_vite test:unit && pnpm --filter @dp_ui/hub_runtime test:unit",
+        "hub:e2e": "node scripts/hub-e2e.mjs"
+    },
+    "devDependencies": {
+        "@dp_ui/hub_cli": "workspace:*"
+    }
+}

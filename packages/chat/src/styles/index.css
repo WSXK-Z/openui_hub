@@ -1,0 +1,133 @@
+/*
+ * @dp_ui/chat 基础样式：全局 reset + 设计令牌 CSS 变量（`--dpc-*`）。
+ * 令牌变量遵循 CSS 变量继承，外部可在任意层级覆盖。
+ * 说明：与 @dp_ui/core 同源但独立命名空间（--dpc-*），两个库可共存消费。
+ */
+:root {
+  --dpc-color-primary: #3b82f6;
+  --dpc-color-primary-hover: #2563eb;
+  --dpc-color-success: #22c55e;
+  --dpc-color-warning: #f59e0b;
+  --dpc-color-danger: #ef4444;
+  --dpc-color-danger-hover: #dc2626;
+  --dpc-color-info: #06b6d4;
+  --dpc-color-surface: #ffffff;
+  --dpc-color-surface-muted: #f8fafc;
+  --dpc-color-text: #1f2937;
+  --dpc-color-text-secondary: #6b7280;
+  --dpc-color-text-inverse: #ffffff;
+  --dpc-color-border: #e5e7eb;
+  --dpc-color-border-hover: #d1d5db;
+  --dpc-color-active-soft: #eff6ff;
+  --dpc-color-bubble-user: #3b82f6;
+  --dpc-color-bubble-assistant: #f3f4f6;
+  --dpc-color-scrim: rgb(15 23 42 / 0.5);
+  --dpc-color-hover-soft: rgb(0 0 0 / 0.04);
+  --dpc-radius: 6px;
+  --dpc-radius-sm: 4px;
+  --dpc-radius-md: 8px;
+  --dpc-radius-lg: 12px;
+  --dpc-radius-xl: 16px;
+  --dpc-size-control-h: 40px;
+  --dpc-size-control-h-sm: 32px;
+  --dpc-size-avatar: 32px;
+  --dpc-size-avatar-lg: 40px;
+  --dpc-size-icon: 16px;
+  --dpc-chat-max-width: 760px;
+  --dpc-z-pop: 1000;
+  --dpc-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* 暗色主题：容器（如 DpcConfigProvider）设置 data-dpc-theme="dark" 时，
+   以该容器为根覆盖下列变量，子树整体切换为暗色（与 tokens/dpcCssVarsDark 对齐）。 */
+[data-dpc-theme='dark'] {
+  color-scheme: dark;
+  --dpc-color-primary: #60a5fa;
+  --dpc-color-primary-hover: #3b82f6;
+  --dpc-color-success: #34d399;
+  --dpc-color-warning: #fbbf24;
+  --dpc-color-danger: #f87171;
+  --dpc-color-danger-hover: #ef4444;
+  --dpc-color-info: #22d3ee;
+  --dpc-color-surface: #0f172a;
+  --dpc-color-surface-muted: #1e293b;
+  --dpc-color-text: #e5e7eb;
+  --dpc-color-text-secondary: #94a3b8;
+  --dpc-color-text-inverse: #ffffff;
+  --dpc-color-border: #334155;
+  --dpc-color-border-hover: #475569;
+  --dpc-color-active-soft: rgb(96 165 250 / 0.16);
+  --dpc-color-bubble-user: #3b82f6;
+  --dpc-color-bubble-assistant: #1e293b;
+  --dpc-color-scrim: rgb(0 0 0 / 0.6);
+  --dpc-color-hover-soft: rgb(255 255 255 / 0.06);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  /* 让 unocss 的 border-* 宽度工具（仅设 border-width）真正显示 */
+  border-style: solid;
+  border-width: 0;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--dpc-color-text);
+  background-color: var(--dpc-color-surface);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* 组件通用关键帧 */
+@keyframes dpc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dpc-typing-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+@keyframes dpc-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

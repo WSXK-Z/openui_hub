@@ -147,3 +147,19 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# ---> dpui_hub
+packages/dpui_hub_cli/target/
+packages/dpui_hub_cli/vendor/
+packages/dpui_hub_server/target/
+packages/dpui_hub_server/.dpui_hub_data/
+packages/dpui_hub_registry/pkg/
+packages/dpui_hub_registry/.dpui-hub/
+**/node_modules/.hub-cache/
+# 凭据在 ~/.dpui/credentials.json（仓库内文件不含密钥，可提交）
+packages/dpui_hub_example/dist/
+
+# ---> 本地机密与临时产物
+# .npmrc 含私有源 _authToken，仅保留在本地，勿提交
+.npmrc
+.tmp-*
+

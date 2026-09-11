@@ -1,0 +1,27 @@
+{
+    "extends": "@vue/tsconfig/tsconfig.dom.json",
+    "include": [
+        "env.d.ts",
+        "src/**/*",
+        "src/**/*.vue"
+    ],
+    "compilerOptions": {
+        "noUncheckedIndexedAccess": true,
+        // @dp_ui/core / @dp_ui/chat / @dp_ui/schema 以「使用方视角」导入，dev 直接指向库源码
+        "paths": {
+            "@/*": [
+                "../core/src/*"
+            ],
+            "@dp_ui/core": [
+                "../core/src/index.ts"
+            ],
+            "@dp_ui/chat": [
+                "../chat/src/index.ts"
+            ],
+            "@dp_ui/schema": [
+                "../schema/src/index.ts"
+            ]
+        },
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo"
+    }
+}

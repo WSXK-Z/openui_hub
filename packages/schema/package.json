@@ -1,0 +1,44 @@
+{
+  "name": "@dp_ui/schema",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "数据驱动的 UI 编排/渲染层（schema 元数据决定结构/样式，绑定数据与数据源驱动交互）",
+  "scripts": {
+    "type-check": "vue-tsc --build",
+    "test:unit": "vitest run",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@dp_ui/core": "workspace:*",
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "^24.13.3",
+    "@unocss/preset-legacy-compat": "^66.7.5",
+    "@unocss/preset-tagify": "^66.7.5",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/server-renderer": "^3.5.40",
+    "@vue/test-utils": "^2.4.6",
+    "@vue/tsconfig": "^0.9.1",
+    "jsdom": "^26.0.0",
+    "oxfmt": "^0.61.0",
+    "oxlint": "^1.76.0",
+    "reka-ui": "^2.10.1",
+    "typescript": "^5.9.3",
+    "unocss": "^66.7.5",
+    "vite": "^8.1.5",
+    "vitest": "^4.0.0",
+    "vue": "^3.5.40",
+    "vue-router": "^5.2.0",
+    "vue-tsc": "^3.3.8"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.12.0"
+  }
+}

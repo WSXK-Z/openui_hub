@@ -1,0 +1,22 @@
+{
+  "cli": {
+    "connection": "default"
+  },
+  "cssStrategy": "vanilla",
+  "lockFile": "dpui-hub.lock.json",
+  "outDir": "pkg",
+  "type": "vue-component",
+  "uno": true,
+  "uses": [
+    {
+      "mode": "remote",
+      "name": "@dp_ui/button",
+      "version": "0.1.3"
+    },
+    {
+      "mode": "remote",
+      "name": "@dp_ui_hub/button",
+      "version": "0.1.3"
+    }
+  ]
+}
