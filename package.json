@@ -15,8 +15,7 @@
         "hub:build:vite": "pnpm --filter @openui_hub/plugin_vite build",
         "hub:build:runtime": "pnpm --filter @openui_hub/runtime build",
         "hub:build": "pnpm hub:build:registry && pnpm hub:build:cli && pnpm hub:build:server && pnpm hub:build:vite && pnpm hub:build:runtime",
-        "hub:test": "pnpm --filter @openui_hub/server test && pnpm --filter @openui_hub/plugin_vite test:unit && pnpm --filter @openui_hub/runtime test:unit",
-        "hub:e2e": "node scripts/hub-e2e.mjs"
+        "hub:test": "pnpm --filter @openui_hub/server test && pnpm --filter @openui_hub/plugin_vite test:unit && pnpm --filter @openui_hub/runtime test:unit"
     },
     "devDependencies": {
         "@openui_hub/cli": "workspace:*",

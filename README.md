@@ -32,7 +32,6 @@ pnpm hub:build:runtime             # 构建运行时 loader
 pnpm hub:build:cli:platforms       # 归集当前平台 oui 二进制到单包 vendor/<os>-<arch>/
 pnpm hub:test                      # server / vite / runtime 单元测试
 pnpm hub:test:cli-install          # npm 安装冒烟（pack → install → `oui --help`）
-pnpm hub:e2e                       # 端到端：registry → server → publish → 分发 → 远程加载
 pnpm hub:use-cli                   # 经 workspace 依赖执行 `oui --help`
 pnpm hub:dev:web                   # 启动平台前端（http://localhost:5173）
 ```
