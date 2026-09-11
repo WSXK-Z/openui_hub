@@ -1,0 +1,92 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://raw.githubusercontent.com/WSXK-Z/openui_hub/main/packages/cli/oui.components.schema.json",
+    "$comment": "oui.components.json：纳入 hub 的组件清单（组件开发者）。公共默认值见 oui.json。",
+    "type": "object",
+    "additionalProperties": true,
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "components": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/component"
+            }
+        }
+    },
+    "definitions": {
+        "component": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+                "name",
+                "version"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "pattern": "^@[^/\\s]+/[^/\\s]+$",
+                    "description": "组件包名，形如 @scope/name。"
+                },
+                "version": {
+                    "type": "string",
+                    "description": "semver 版本。"
+                },
+                "registry": {
+                    "type": "string",
+                    "description": "该组件发布到的 hub 地址（oui register 询问后写入）。"
+                },
+                "entry": {
+                    "type": "string",
+                    "description": "组件源入口（相对工程根）。"
+                },
+                "source": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "随包分发的源码清单（相对工程根）。"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "cssStrategy": {
+                    "type": "string",
+                    "enum": [
+                        "vanilla",
+                        "atomic-unocss",
+                        "atomic-var"
+                    ]
+                },
+                "outDir": {
+                    "type": "string",
+                    "description": "该组件的产物目录（相对工程根）；缺省 <oui.json 的 outDir>/<name>@<version>。"
+                },
+                "peer": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "types": {
+                    "description": "类型声明：字符串＝显式入口；false＝不提供；缺省＝按 tsconfig.dts.json 推导。",
+                    "oneOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "object"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

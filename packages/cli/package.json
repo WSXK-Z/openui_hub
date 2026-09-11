@@ -8,7 +8,9 @@
   "files": [
     "bin",
     "vendor",
-    "oui.schema.json"
+    "oui.schema.json",
+    "oui.components.schema.json",
+    "oui.lock.schema.json"
   ],
   "scripts": {
     "build": "cargo build --release"
