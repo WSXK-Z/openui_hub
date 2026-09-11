@@ -1,0 +1,18 @@
+{
+  "name": "@openui_hub/cli",
+  "version": "0.1.0",
+  "description": "dpui —— openui_hub 本地终端工具（Rust）。单包：npm 安装后提供 dpui 命令，bin shim 按平台从包内 vendor/<os>-<arch>/ 选择二进制",
+  "bin": {
+    "dpui": "./bin/dpui.js"
+  },
+  "files": [
+    "bin",
+    "vendor"
+  ],
+  "scripts": {
+    "build": "cargo build --release"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.12.0"
+  }
+}

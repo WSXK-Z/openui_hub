@@ -23,17 +23,17 @@ importers:
 
   .:
     devDependencies:
-      '@dp_ui/hub_cli':
+      '@openui_hub/cli':
         specifier: workspace:*
-        version: link:packages/openui_hub_cli
+        version: link:packages/cli
 
-  packages/openui_hub_cli: {}
+  packages/cli: {}
 
-  packages/openui_hub_example:
+  packages/example:
     dependencies:
-      '@dp_ui/hub_vite':
+      '@openui_hub/plugin_vite':
         specifier: workspace:*
-        version: link:../openui_hub_vite
+        version: link:../vite
       vue:
         specifier: rc
         version: 3.6.0-rc.7(typescript@5.9.3)
@@ -48,11 +48,26 @@ importers:
         specifier: ^8.1.5
         version: 8.2.0(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0)
 
-  packages/openui_hub_registry:
+  packages/plugin_vite:
     devDependencies:
-      '@dp_ui/hub_vite':
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.13.3
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^8.1.5
+        version: 8.2.0(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0)
+      vitest:
+        specifier: ^4.0.0
+        version: 4.1.10(@types/node@24.13.3)(jsdom@26.1.0)(vite@8.2.0(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
+
+  packages/registry:
+    devDependencies:
+      '@openui_hub/plugin_vite':
         specifier: workspace:*
-        version: link:../openui_hub_vite
+        version: link:../vite
       '@unocss/transformer-directives':
         specifier: ^66.7.5
         version: 66.7.5
@@ -78,7 +93,7 @@ importers:
         specifier: ^3.0.0
         version: 3.3.9(typescript@5.9.3)
 
-  packages/openui_hub_runtime:
+  packages/runtime:
     dependencies:
       vue:
         specifier: rc
@@ -103,28 +118,13 @@ importers:
         specifier: ^4.0.0
         version: 4.1.10(@types/node@24.13.3)(jsdom@26.1.0)(vite@8.2.0(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
 
-  packages/openui_hub_server: {}
+  packages/server: {}
 
-  packages/openui_hub_vite:
-    devDependencies:
-      '@types/node':
-        specifier: ^24.13.3
-        version: 24.13.3
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vite:
-        specifier: ^8.1.5
-        version: 8.2.0(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0)
-      vitest:
-        specifier: ^4.0.0
-        version: 4.1.10(@types/node@24.13.3)(jsdom@26.1.0)(vite@8.2.0(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
-
-  packages/openui_hub_web:
+  packages/web:
     dependencies:
-      '@dp_ui/hub_runtime':
+      '@openui_hub/runtime':
         specifier: workspace:*
-        version: link:../openui_hub_runtime
+        version: link:../runtime
       reka-ui:
         specifier: ^2.10.1
         version: 2.10.1(vue@3.6.0-rc.7(typescript@5.9.3))

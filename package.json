@@ -5,19 +5,19 @@
     "scripts": {
         "hub:install-cli": "node scripts/hub-platform-pack.mjs && pnpm install --no-frozen-lockfile",
         "hub:use-cli": "pnpm exec dpui --help",
-        "hub:dev:web": "pnpm --filter @dp_ui/hub_web dev",
-        "hub:build:registry": "pnpm --filter @dp_ui/hub_registry build",
-        "hub:build:server": "pnpm --filter @dp_ui/hub_server build",
-        "hub:build:cli": "pnpm --filter @dp_ui/hub_cli build",
+        "hub:dev:web": "pnpm --filter @openui_hub/web dev",
+        "hub:build:registry": "pnpm --filter @openui_hub/registry build",
+        "hub:build:server": "pnpm --filter @openui_hub/server build",
+        "hub:build:cli": "pnpm --filter @openui_hub/cli build",
         "hub:build:cli:platforms": "node scripts/hub-platform-pack.mjs",
         "hub:test:cli-install": "node scripts/hub-cli-install-smoke.mjs",
-        "hub:build:vite": "pnpm --filter @dp_ui/hub_vite build",
-        "hub:build:runtime": "pnpm --filter @dp_ui/hub_runtime build",
+        "hub:build:vite": "pnpm --filter @openui_hub/plugin_vite build",
+        "hub:build:runtime": "pnpm --filter @openui_hub/runtime build",
         "hub:build": "pnpm hub:build:registry && pnpm hub:build:cli && pnpm hub:build:server && pnpm hub:build:vite && pnpm hub:build:runtime",
-        "hub:test": "pnpm --filter @dp_ui/hub_server test && pnpm --filter @dp_ui/hub_vite test:unit && pnpm --filter @dp_ui/hub_runtime test:unit",
+        "hub:test": "pnpm --filter @openui_hub/server test && pnpm --filter @openui_hub/plugin_vite test:unit && pnpm --filter @openui_hub/runtime test:unit",
         "hub:e2e": "node scripts/hub-e2e.mjs"
     },
     "devDependencies": {
-        "@dp_ui/hub_cli": "workspace:*"
+        "@openui_hub/cli": "workspace:*"
     }
 }
