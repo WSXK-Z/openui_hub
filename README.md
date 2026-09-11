@@ -54,12 +54,37 @@ oui init
 | --- | --- |
 | `oui.json` | CLI 在当前目录的配置与公共默认值（`type` / `cssStrategy` / `outDir` / `uno` / `peer` / `lockFile`） |
 | `oui.components.json` | 组件开发者：哪些组件纳入 hub，每个组件记录发布到的 hub 地址（`registry`） |
-| `oui.lock.json` | 组件使用者：锁定使用的远程组件（每个包只记 `version` + 来源 hub 地址 `registry`，产物路径/样式/类型由该版本的 manifest 决定） |
+| `oui.lock.json` | 组件使用者：锁定使用的远程组件（每个包记 `default` 版本 + 各已锁定版本，每个版本只记来源 hub 地址 `registry`，产物路径/样式/类型由该版本的 manifest 决定） |
 
 `oui init` 生成 `oui.json`（不录入凭据）；`oui create <@scope/name>` 生成组件模板并登记；
 `oui register <@scope/name>` 登记已有组件并询问发布到哪个 hub；
 `oui use <@scope/name>` 询问从哪个 hub 获取，并把地址写进 `oui.lock.json` 的对应条目。
 发布/拉取都按各条目自带的地址进行，构建期可用 `OUI_REGISTRY` 临时改指向。
+
+### 多版本
+
+同一组件可同时锁定多个版本，导入时用 `@` 指定：
+
+```json
+{
+  "packages": {
+    "@oui/button": {
+      "default": "0.1.4",
+      "versions": { "0.1.4": { "registry": "http://127.0.0.1:8787" }, "0.1.5": { "registry": "http://127.0.0.1:8787" } }
+    }
+  }
+}
+```
+
+- `oui-hub:@oui/button` → `default` 版本；`oui-hub:@oui/button@0.1.5` → 该版本；样式通道同理（`oui-hub-css:<pkg>[@<version>].css`）。
+- `oui use <pkg>` 锁 latest 并设为 `default`；`oui use <pkg>@<version>` 锁指定版本（首次锁定仍会成为 `default`）；
+  `oui use <pkg>@<version> --default` 把 `default` 切到该版本。
+- 未在 lock 中锁定的包/版本不参与解析（构建时按模块找不到报错）。
+
+`oui use` 按锁定版本把该组件的类型声明下载到 `node_modules/.hub-cache/types/<pkg>/<version>/`
+（与构建期模块缓存同根：工程内不产生额外文件，也无需写忽略配置），并把 `oui-hub:<pkg>`
+与 `oui-hub:<pkg>@<version>` 的 tsconfig `paths` 映射自动接到各自的缓存入口；
+依赖重装等把缓存清掉后用 `oui fix` 重建。
 
 ### 组件入口契约（`oui create` 生成的模板）
 
@@ -74,7 +99,8 @@ oui init
 | `component` | 是 | 组件本体（SFC 的 default 或 `defineComponent(...)` 返回值） |
 
 同时**具名导出组件本体**：构建期 `import { Button } from 'oui-hub:@oui/button'` 拿组件，
-`import desc from 'oui-hub:@oui/button'` 拿描述对象；运行时 `loadRemote` / `<HubRemote>` /
+`import desc from 'oui-hub:@oui/button'` 拿描述对象（需指定版本时写 `oui-hub:@oui/button@<version>`）；
+运行时 `loadRemote` / `<HubRemote>` /
 平台预览统一取 `mod.default.component`。组件只应依赖 peer 声明的依赖与自身目录内文件。
 
 ```sh
