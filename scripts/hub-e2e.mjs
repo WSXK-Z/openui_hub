@@ -1,11 +1,12 @@
 /**
  * openui_hub 端到端验证：registry 构建 → server 启动 → publish → 分发断言 → 重复发布 409 →
- * dpui use 生成 lock → example 构建期远程加载。任一步失败即非零退出。
+ * oui use 生成 lock → example 构建期远程加载。任一步失败即非零退出。
  * cwd = 仓库根（hub:e2e 已保证）。
  */
 
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -13,7 +14,7 @@ const ROOT = process.cwd()
 const CLI_DIR = join(ROOT, 'packages/cli')
 const CLI_BIN = join(
   CLI_DIR,
-  'target/release/dpui' + (process.platform === 'win32' ? '.exe' : ''),
+  'target/release/oui' + (process.platform === 'win32' ? '.exe' : ''),
 )
 const SERVER_DIR = join(ROOT, 'packages/server')
 const SERVER_BIN = join(SERVER_DIR, 'target/debug/openui-hub-server.exe')
@@ -21,8 +22,8 @@ const SERVER_BIN_UNIX = join(SERVER_DIR, 'target/debug/openui-hub-server')
 const SERVER_EXE =
   process.env.HUB_SERVER_BIN ?? (process.platform === 'win32' ? SERVER_BIN : SERVER_BIN_UNIX)
 const REGISTRY_DIR = join(ROOT, 'packages/registry')
-/** 从 dpui.pkg.json 动态取组件（版本/目录随配置，杜绝陈旧 pkg 目录误导断言） */
-const pkgCfg = JSON.parse(readFileSync(join(REGISTRY_DIR, 'dpui.pkg.json'), 'utf8'))
+/** 从 oui.json 动态取组件（版本/目录随配置，杜绝陈旧 pkg 目录误导断言） */
+const pkgCfg = JSON.parse(readFileSync(join(REGISTRY_DIR, 'oui.json'), 'utf8'))
 const pkgs = pkgCfg.components.map((c) => ({
   name: c.name,
   version: c.version,
@@ -157,14 +158,14 @@ async function main() {
     // 2b. CLI 用 release 产物 → 先编译（防陈旧二进制缺新参数/逻辑）
     runSync('编译 CLI（release）', 'cargo', ['build', '--release'], { cwd: CLI_DIR })
 
-    // 2c. 组件工程声明链路修复：删 tsconfig.dts.json + 拿掉 build 前置 → dpui fix 复原且能再构建
+    // 2c. 组件工程声明链路修复：删 tsconfig.dts.json + 拿掉 build 前置 → oui fix 复原且能再构建
     const dtsCfgPath = join(REGISTRY_DIR, 'tsconfig.dts.json')
     const regPkgPath = join(REGISTRY_DIR, 'package.json')
     const regPkgOrig = readFileSync(regPkgPath, 'utf8')
     const dtsCfgOrig = readFileSync(dtsCfgPath, 'utf8')
     rmSync(dtsCfgPath)
     writeFileSync(regPkgPath, regPkgOrig.replace('vue-tsc -p tsconfig.dts.json && ', ''))
-    const declFix = runSync('dpui fix（组件工程声明链路）', CLI_BIN, ['fix'], { cwd: REGISTRY_DIR })
+    const declFix = runSync('oui fix（组件工程声明链路）', CLI_BIN, ['fix'], { cwd: REGISTRY_DIR })
     if (!declFix.includes('tsconfig.dts.json')) fail(`fix 未处理声明产出链路:\n${declFix}`)
     if (!existsSync(dtsCfgPath) || readFileSync(dtsCfgPath, 'utf8') !== dtsCfgOrig) {
       fail('fix 未按原样重建 tsconfig.dts.json')
@@ -175,7 +176,7 @@ async function main() {
 
     // 3. publish（每组件一次，单目录模式）
     for (const p of pkgs) {
-      const pub = runSync(`dpui publish ${p.name}`, CLI_BIN, [
+      const pub = runSync(`oui publish ${p.name}`, CLI_BIN, [
         'publish', '--dir', p.dir, '--registry', REGISTRY, '--token', TOKEN,
       ])
       if (!pub.includes('published')) fail(`publish 输出缺少 "published": ${pub}`)
@@ -200,14 +201,14 @@ async function main() {
       if (mjs.status !== 200 || !mjs.text.includes('vue')) fail(`dist/${name}.mjs 不可用或内容异常`)
     }
     const css = await fetchText(`${REGISTRY}/v/${BUTTON.name}@${BUTTON.version}/dist/style.css`)
-    if (css.status !== 200 || !css.text.includes('dpui-btn')) fail('dist/style.css 不可用')
+    if (css.status !== 200 || !css.text.includes('oui-btn')) fail('dist/style.css 不可用')
     console.log('[E2E] 分发断言通过（index/mjs/css）')
 
     // 4b. source 分发断言（源码文件经 /source/ 路由可取）
     const vueSrc = await fetchText(
       `${REGISTRY}/v/${BUTTON.name}@${BUTTON.version}/source/src/ui/button/Button.vue`,
     )
-    if (vueSrc.status !== 200 || !vueSrc.text.includes('dpui-btn')) {
+    if (vueSrc.status !== 200 || !vueSrc.text.includes('oui-btn')) {
       fail(`source Button.vue 不可用（status=${vueSrc.status}）: ${vueSrc.text.slice(0, 300)}`)
     }
     const tagPkg = pkgs.find((p) => p.name.endsWith('/tag'))
@@ -249,17 +250,17 @@ async function main() {
     }
     console.log('[E2E] 重复发布 409 断言通过')
 
-    // 6. dpui use --mode source：复制源码到临时消费工程
+    // 6. oui use --mode source：复制源码到临时消费工程
     const consumer = mkdtempSync(join(tmpdir(), 'hub-consumer-'))
     try {
-      const srcUse = runSync('dpui use --mode source', CLI_BIN, [
+      const srcUse = runSync('oui use --mode source', CLI_BIN, [
         'use', BUTTON.name, '--mode', 'source', '--registry', REGISTRY,
       ], { cwd: consumer })
       if (!srcUse.includes(`已复制 2 个源文件`)) fail(`use source 输出异常: ${srcUse}`)
-      const vuePath = join(consumer, 'src/components/dpui/button/Button.vue')
-      const tsPath = join(consumer, 'src/components/dpui/button/button.ts')
-      if (!existsSync(vuePath) || !readFileSync(vuePath, 'utf8').includes('dpui-btn')) {
-        fail('use source 未正确落盘 Button.vue（含 dpui-btn）')
+      const vuePath = join(consumer, 'src/components/oui/button/Button.vue')
+      const tsPath = join(consumer, 'src/components/oui/button/button.ts')
+      if (!existsSync(vuePath) || !readFileSync(vuePath, 'utf8').includes('oui-btn')) {
+        fail('use source 未正确落盘 Button.vue（含 oui-btn）')
       }
       if (!existsSync(tsPath) || !readFileSync(tsPath, 'utf8').includes('Button.vue')) {
         fail('use source 未正确落盘 button.ts（引用 Button.vue）')
@@ -269,18 +270,18 @@ async function main() {
       rmSync(consumer, { recursive: true, force: true })
     }
 
-    // 7. dpui use（remote 默认）→ lock + 本地类型落盘 + tsconfig paths 接线
+    // 7. oui use（remote 默认）→ lock + 本地类型落盘 + tsconfig paths 接线
     if (typedCfg) {
-      runSync('dpui use（有类型的包）', CLI_BIN, ['use', typedCfg.name, '--registry', REGISTRY], { cwd: EXAMPLE_DIR })
+      runSync('oui use（有类型的包）', CLI_BIN, ['use', typedCfg.name, '--registry', REGISTRY], { cwd: EXAMPLE_DIR })
     }
-    const useUntyped = runSync('dpui use（无类型的包）', CLI_BIN, ['use', untypedCfg.name, '--registry', REGISTRY], {
+    const useUntyped = runSync('oui use（无类型的包）', CLI_BIN, ['use', untypedCfg.name, '--registry', REGISTRY], {
       cwd: EXAMPLE_DIR,
     })
     if (!useUntyped.includes(`${untypedCfg.name}@${untypedCfg.version} 未提供类型声明`)) {
       fail(`use 无类型包未提示类型缺失:\n${useUntyped}`)
     }
-    const lockPath = join(EXAMPLE_DIR, 'dpui-hub.lock.json')
-    if (!existsSync(lockPath)) fail('未生成 dpui-hub.lock.json')
+    const lockPath = join(EXAMPLE_DIR, 'oui-hub.lock.json')
+    if (!existsSync(lockPath)) fail('未生成 oui-hub.lock.json')
     const lockText = readFileSync(lockPath, 'utf8')
     if (!/"module"\s*:/.test(lockText)) fail('lock 缺少相对 module 字段')
     if (/"token"\s*:/.test(lockText)) fail('lock 不应包含 token')
@@ -295,17 +296,17 @@ async function main() {
         if (!existsSync(join(EXAMPLE_DIR, f))) fail(`本地声明文件缺失: ${f}`)
       }
       if (lockJson.packages?.[untypedCfg.name]?.types) fail(`${untypedCfg.name} 无类型声明，lock 不应写 types`)
-      const dtsText = readFileSync(join(EXAMPLE_DIR, 'dpui.d.ts'), 'utf8')
-      if (!dtsText.includes('@openui_hub/plugin_vite/remote')) fail('dpui.d.ts 缺通配类型引用')
-      const refCfgText = readFileSync(join(EXAMPLE_DIR, 'tsconfig.dpui.json'), 'utf8')
-      if (!refCfgText.includes(`"dpui-hub:${typedCfg.name}"`)) {
-        fail(`tsconfig.dpui.json 缺 paths 映射: dpui-hub:${typedCfg.name}`)
+      const dtsText = readFileSync(join(EXAMPLE_DIR, 'oui.d.ts'), 'utf8')
+      if (!dtsText.includes('@openui_hub/plugin_vite/remote')) fail('oui.d.ts 缺通配类型引用')
+      const refCfgText = readFileSync(join(EXAMPLE_DIR, 'tsconfig.oui.json'), 'utf8')
+      if (!refCfgText.includes(`"oui-hub:${typedCfg.name}"`)) {
+        fail(`tsconfig.oui.json 缺 paths 映射: oui-hub:${typedCfg.name}`)
       }
-      console.log('[E2E] use 类型落盘断言通过（dpui-types/ + lock.types + tsconfig paths）')
+      console.log('[E2E] use 类型落盘断言通过（oui-types/ + lock.types + tsconfig paths）')
 
-      // 7b. 本地声明被删后 `dpui fix` 必须重建（不要求用户重跑 use）
-      rmSync(join(EXAMPLE_DIR, 'dpui-types', typedCfg.name), { recursive: true, force: true })
-      const fixed = runSync('dpui fix（重建本地类型）', CLI_BIN, ['fix', '--registry', REGISTRY], {
+      // 7b. 本地声明被删后 `oui fix` 必须重建（不要求用户重跑 use）
+      rmSync(join(EXAMPLE_DIR, 'oui-types', typedCfg.name), { recursive: true, force: true })
+      const fixed = runSync('oui fix（重建本地类型）', CLI_BIN, ['fix', '--registry', REGISTRY], {
         cwd: EXAMPLE_DIR,
       })
       if (!fixed.includes('已重建')) fail(`fix 未重建本地类型声明:\n${fixed}`)
@@ -322,16 +323,16 @@ async function main() {
 
     // 8. example 构建（插件通道端到端；先清插件磁盘缓存——e2e 每次用同版本 URL 承载新内容）
     rmSync(join(EXAMPLE_DIR, 'node_modules', '.hub-cache'), { recursive: true, force: true })
-    // lock 用相对路径 + 连接名：构建期用 DPUI_REGISTRY 指定本次 e2e 的 registry
+    // lock 用相对路径 + 连接名：构建期用 OUI_REGISTRY 指定本次 e2e 的 registry
     runSync('构建 example', 'pnpm', ['--filter', '@openui_hub/example', 'build'], {
-      env: { ...process.env, DPUI_REGISTRY: REGISTRY },
+      env: { ...process.env, OUI_REGISTRY: REGISTRY },
     })
     const distDir = join(EXAMPLE_DIR, 'dist')
     const assets = readdirRecursive(distDir)
     const js = assets.filter((a) => a.endsWith('.js')).map((a) => readFileSync(join(distDir, a), 'utf8')).join('\n')
     const cssAll = assets.filter((a) => a.endsWith('.css')).map((a) => readFileSync(join(distDir, a), 'utf8')).join('\n')
-    if (!js.includes('dpui-btn')) fail('example 产物 js 未含远程组件代码（dpui-btn）')
-    if (!cssAll.includes('.dpui-btn')) fail('example 产物 css 未含远程组件样式（.dpui-btn）')
+    if (!js.includes('oui-btn')) fail('example 产物 js 未含远程组件代码（oui-btn）')
+    if (!cssAll.includes('.oui-btn')) fail('example 产物 css 未含远程组件样式（.oui-btn）')
     console.log('[E2E] example 产物断言通过（远程 render js + 样式 css 已进宿主 bundle）')
 
     // 9. 类型提示断言（tsc 探针）：有类型的包 → 真 props 类型（误用报错）；无类型的包 → any（不报错）
@@ -342,9 +343,9 @@ async function main() {
         probeCfg,
         `${JSON.stringify(
           {
-            extends: './tsconfig.dpui.json',
+            extends: './tsconfig.oui.json',
             compilerOptions: { composite: false, noEmit: true },
-            include: ['__type_probe.ts', 'dpui.d.ts'],
+            include: ['__type_probe.ts', 'oui.d.ts'],
           },
           null,
           2,
@@ -353,15 +354,20 @@ async function main() {
       )
       writeFileSync(
         probeTs,
-        `import { Button } from 'dpui-hub:${typedCfg.name}'
-import { Button as Untyped } from 'dpui-hub:${untypedCfg.name}'
+        `import { Button } from 'oui-hub:${typedCfg.name}'
+import { Button as Untyped } from 'oui-hub:${untypedCfg.name}'
 export const typed: InstanceType<typeof Button>['$props'] = { variant: 'nope' }
 export const untyped: InstanceType<typeof Untyped>['$props'] = { variant: 'nope' }
 `,
         'utf8',
       )
       try {
-        const tsc = join(EXAMPLE_DIR, 'node_modules/typescript/bin/tsc')
+        let tsc
+        try {
+          tsc = createRequire(join(EXAMPLE_DIR, 'package.json')).resolve('typescript/bin/tsc')
+        } catch {
+          fail('未找到 typescript：请在 packages/example 或仓库根安装（pnpm install）')
+        }
         const res = spawnSync(process.execPath, [tsc, '-p', probeCfg], { cwd: EXAMPLE_DIR, encoding: 'utf8' })
         const out = `${res.stdout ?? ''}${res.stderr ?? ''}`
         const errors = out.split(/\r?\n/).filter((l) => l.includes('error TS'))
