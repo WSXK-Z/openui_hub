@@ -1,7 +1,7 @@
 # dpui CLI 多平台产物构建与发布
 # 触发：workflow_dispatch（Actions 页手动）或推送 tag `cli-v*`
 # 说明：每个平台 job 在原生 runner 上 cargo build，经 scripts/hub-platform-pack.mjs
-#       归集到 packages/openui_hub_cli/vendor/<os>-<arch>/；merge job 合并全部 vendor
+#       归集到 packages/cli/vendor/<os>-<arch>/；merge job 合并全部 vendor
 #       后运行 npm 安装冒烟，再按 input.publish 决定是否 `npm publish`。
 # linux-arm64 暂未纳入（需 cross 容器链），v1 覆盖 win32-x64 / darwin-x64 /
 # darwin-arm64 / linux-x64。
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: '发布到 npm（@dp_ui/hub_cli）'
+        description: '发布到 npm（@openui_hub/cli）'
         type: boolean
         default: false
   push:
@@ -50,7 +50,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: vendor-${{ matrix.target }}
-          path: packages/openui_hub_cli/vendor/${{ matrix.target }}
+          path: packages/cli/vendor/${{ matrix.target }}
           retention-days: 1
 
   merge:
@@ -74,17 +74,17 @@ jobs:
         run: |
           for d in artifacts/vendor/*; do
             target=$(basename "$d")
-            mkdir -p "packages/openui_hub_cli/vendor/$target"
-            cp -r "$d"/. "packages/openui_hub_cli/vendor/$target/"
+            mkdir -p "packages/cli/vendor/$target"
+            cp -r "$d"/. "packages/cli/vendor/$target/"
           done
-          find packages/openui_hub_cli/vendor -maxdepth 2 -type f | sort
+          find packages/cli/vendor -maxdepth 2 -type f | sort
       - name: 安装冒烟（shim 经 npm 安装后可用）
         run: |
           node scripts/hub-platform-pack.mjs --platform linux-x64  # 确保当前平台产物可测
           pnpm hub:test:cli-install
-      - name: 发布 @dp_ui/hub_cli
+      - name: 发布 @openui_hub/cli
         if: (github.event.inputs.publish == 'true' || startsWith(github.ref, 'refs/tags/cli-v'))
-        working-directory: packages/openui_hub_cli
+        working-directory: packages/cli
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

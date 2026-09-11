@@ -10,17 +10,17 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const ROOT = process.cwd()
-const CLI_DIR = join(ROOT, 'packages/openui_hub_cli')
+const CLI_DIR = join(ROOT, 'packages/cli')
 const CLI_BIN = join(
   CLI_DIR,
   'target/release/dpui' + (process.platform === 'win32' ? '.exe' : ''),
 )
-const SERVER_DIR = join(ROOT, 'packages/openui_hub_server')
-const SERVER_BIN = join(SERVER_DIR, 'target/debug/dpui-hub-server.exe')
-const SERVER_BIN_UNIX = join(SERVER_DIR, 'target/debug/dpui-hub-server')
+const SERVER_DIR = join(ROOT, 'packages/server')
+const SERVER_BIN = join(SERVER_DIR, 'target/debug/openui-hub-server.exe')
+const SERVER_BIN_UNIX = join(SERVER_DIR, 'target/debug/openui-hub-server')
 const SERVER_EXE =
   process.env.HUB_SERVER_BIN ?? (process.platform === 'win32' ? SERVER_BIN : SERVER_BIN_UNIX)
-const REGISTRY_DIR = join(ROOT, 'packages/openui_hub_registry')
+const REGISTRY_DIR = join(ROOT, 'packages/registry')
 /** 从 dpui.pkg.json 动态取组件（版本/目录随配置，杜绝陈旧 pkg 目录误导断言） */
 const pkgCfg = JSON.parse(readFileSync(join(REGISTRY_DIR, 'dpui.pkg.json'), 'utf8'))
 const pkgs = pkgCfg.components.map((c) => ({
@@ -30,7 +30,7 @@ const pkgs = pkgCfg.components.map((c) => ({
   dir: join(REGISTRY_DIR, 'pkg', `${c.name}@${c.version}`),
 }))
 const BUTTON = pkgs[0]
-const EXAMPLE_DIR = join(ROOT, 'packages/openui_hub_example')
+const EXAMPLE_DIR = join(ROOT, 'packages/example')
 const REGISTRY = 'http://127.0.0.1:18987'
 const TOKEN = 'dev-token-e2e'
 
@@ -296,7 +296,7 @@ async function main() {
       }
       if (lockJson.packages?.[untypedCfg.name]?.types) fail(`${untypedCfg.name} 无类型声明，lock 不应写 types`)
       const dtsText = readFileSync(join(EXAMPLE_DIR, 'dpui.d.ts'), 'utf8')
-      if (!dtsText.includes('@dp_ui/hub_vite/remote')) fail('dpui.d.ts 缺通配类型引用')
+      if (!dtsText.includes('@openui_hub/plugin_vite/remote')) fail('dpui.d.ts 缺通配类型引用')
       const refCfgText = readFileSync(join(EXAMPLE_DIR, 'tsconfig.dpui.json'), 'utf8')
       if (!refCfgText.includes(`"dpui-hub:${typedCfg.name}"`)) {
         fail(`tsconfig.dpui.json 缺 paths 映射: dpui-hub:${typedCfg.name}`)
@@ -323,7 +323,7 @@ async function main() {
     // 8. example 构建（插件通道端到端；先清插件磁盘缓存——e2e 每次用同版本 URL 承载新内容）
     rmSync(join(EXAMPLE_DIR, 'node_modules', '.hub-cache'), { recursive: true, force: true })
     // lock 用相对路径 + 连接名：构建期用 DPUI_REGISTRY 指定本次 e2e 的 registry
-    runSync('构建 example', 'pnpm', ['--filter', '@dp_ui/hub_example', 'build'], {
+    runSync('构建 example', 'pnpm', ['--filter', '@openui_hub/example', 'build'], {
       env: { ...process.env, DPUI_REGISTRY: REGISTRY },
     })
     const distDir = join(EXAMPLE_DIR, 'dist')

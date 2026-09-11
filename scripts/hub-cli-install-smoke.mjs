@@ -1,5 +1,5 @@
 /**
- * npm 安装冒烟：pack @dp_ui/hub_cli 单包 → 本地 npm install → 经 bin shim 执行 dpui。
+ * npm 安装冒烟：pack @openui_hub/cli 单包 → 本地 npm install → 经 bin shim 执行 dpui。
  * 验证"通过 node 环境安装"闭环（离线 registry）。
  */
 
@@ -10,7 +10,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const CLI_DIR = join(ROOT, 'packages/openui_hub_cli')
+const CLI_DIR = join(ROOT, 'packages/cli')
 const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 function run(cwd, cmd, args) {
