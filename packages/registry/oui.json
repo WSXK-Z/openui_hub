@@ -1,41 +1,6 @@
 {
   "$schema": "node_modules/@openui_hub/cli/oui.schema.json",
-  "connection": [
-    "default"
-  ],
   "cssStrategy": "vanilla",
   "type": "vue-component",
-  "uno": true,
-  "components": [
-    {
-      "description": "openui_hub 样例按钮组件（vanilla 样式）",
-      "entry": "src/ui/button/button.ts",
-      "name": "@oui/button",
-      "source": [
-        "src/ui/button/button.ts",
-        "src/ui/button/Button.vue"
-      ],
-      "version": "0.1.4"
-    },
-    {
-      "description": "测试",
-      "entry": "src/ui/button/button.ts",
-      "name": "@openui_hub/button",
-      "source": [
-        "src/ui/button/button.ts",
-        "src/ui/button/Button.vue"
-      ],
-      "types": false,
-      "version": "0.1.4"
-    },
-    {
-      "description": "openui_hub 样例标签组件（UnoCSS 原子类）",
-      "entry": "src/ui/tag/tag.ts",
-      "name": "@oui/tag",
-      "source": [
-        "src/ui/tag/tag.ts"
-      ],
-      "version": "0.1.4"
-    }
-  ]
+  "uno": true
 }

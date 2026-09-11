@@ -1,0 +1,38 @@
+{
+    "$schema": "node_modules/@openui_hub/cli/oui.components.schema.json",
+    "components": [
+        {
+            "description": "openui_hub 样例按钮组件（vanilla 样式）",
+            "entry": "src/ui/button/index.ts",
+            "name": "@oui/button",
+            "registry": "http://127.0.0.1:8787",
+            "source": [
+                "src/ui/button/index.ts",
+                "src/ui/button/Button.vue"
+            ],
+            "version": "0.1.4"
+        },
+        {
+            "description": "测试",
+            "entry": "src/ui/button/index.ts",
+            "name": "@openui_hub/button",
+            "registry": "http://127.0.0.1:8787",
+            "source": [
+                "src/ui/button/index.ts",
+                "src/ui/button/Button.vue"
+            ],
+            "types": false,
+            "version": "0.1.4"
+        },
+        {
+            "description": "openui_hub 样例标签组件（UnoCSS 原子类）",
+            "entry": "src/ui/tag/index.ts",
+            "name": "@oui/tag",
+            "registry": "http://127.0.0.1:8787",
+            "source": [
+                "src/ui/tag/index.ts"
+            ],
+            "version": "0.1.4"
+        }
+    ]
+}

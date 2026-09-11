@@ -53,7 +53,7 @@ const error = ref('')
 const installText = computed(() => {
   const n = fullName.value
   const lines = [
-    `# CLI 锁定（生成 oui-hub.lock.json）`,
+    `# CLI 锁定（生成 oui.lock.json）`,
     `oui use ${n}`,
     ``,
     `# 构建期（Vite 插件）`,
@@ -409,26 +409,17 @@ onMounted(load)
       <h2 class="mt-6 text-sm font-bold text-gray-700">版本</h2>
       <ul class="mt-2 divide-y divide-gray-200 rounded border border-gray-200 bg-white">
         <li v-if="detail.versions.length === 0" class="px-4 py-2 text-sm text-gray-400">暂无可用版本</li>
-        <li
-          v-for="v in detail.versions"
-          :key="v.version"
-          class="px-4 py-2 font-mono text-sm"
-          :class="v.version === selectedVersion ? 'bg-blue-50' : ''"
-        >
+        <li v-for="v in detail.versions" :key="v.version" class="px-4 py-2 font-mono text-sm"
+          :class="v.version === selectedVersion ? 'bg-blue-50' : ''">
           {{ v.version }}
         </li>
       </ul>
 
       <h2 class="mt-6 text-sm font-bold text-gray-700">包资源</h2>
       <div class="mt-2 flex items-center gap-3">
-        <HubSelect
-          v-model="selectedVersion"
-          :options="detail.versions.map((v) => v.version)"
+        <HubSelect v-model="selectedVersion" :options="detail.versions.map((v) => v.version)"
           trigger-class="rounded border border-gray-300 bg-white px-2 py-1 font-mono text-sm text-gray-900"
-          item-class="font-mono text-xs text-gray-700"
-          aria-label="选择包资源版本"
-          title="选择包资源版本"
-        />
+          item-class="font-mono text-xs text-gray-700" aria-label="选择包资源版本" title="选择包资源版本" />
         <span v-if="filesLoading" class="text-sm text-gray-500">加载中…</span>
         <span v-else-if="filesError" class="text-sm text-red-500">清单加载失败：{{ filesError }}</span>
       </div>
@@ -437,12 +428,9 @@ onMounted(load)
         <div class="overflow-hidden rounded border border-gray-200 bg-white">
           <ul class="divide-y divide-gray-100">
             <li>
-              <button
-                type="button"
+              <button type="button"
                 class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-gray-50"
-                :class="isActivePath(MANIFEST_PATH) ? 'bg-blue-50' : ''"
-                @click="openPreview(manifestEntry)"
-              >
+                :class="isActivePath(MANIFEST_PATH) ? 'bg-blue-50' : ''" @click="openPreview(manifestEntry)">
                 <span class="truncate font-mono text-xs">{{ MANIFEST_PATH }}</span>
                 <span class="shrink-0 text-xs text-gray-400">—</span>
               </button>
@@ -454,13 +442,9 @@ onMounted(load)
             </p>
             <ul class="divide-y divide-gray-100">
               <li v-for="f in g.files" :key="f.path">
-                <button
-                  type="button"
+                <button type="button"
                   class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-gray-50"
-                  :class="isActivePath(f.path) ? 'bg-blue-50' : ''"
-                  :title="f.path"
-                  @click="openPreview(entryOf(f))"
-                >
+                  :class="isActivePath(f.path) ? 'bg-blue-50' : ''" :title="f.path" @click="openPreview(entryOf(f))">
                   <span class="truncate font-mono text-xs">{{ baseName(f.path) }}</span>
                   <span class="shrink-0 text-xs text-gray-400">{{ formatSize(f.size) }}</span>
                 </button>
@@ -477,35 +461,22 @@ onMounted(load)
             <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-gray-200 bg-white px-3 py-2">
               <span class="font-mono text-xs font-bold">{{ preview.entry.path }}</span>
               <span class="text-xs text-gray-500">{{ formatSize(preview.entry.size) }}</span>
-              <a
-                :href="preview.entry.url"
-                target="_blank"
-                rel="noreferrer"
-                class="text-xs text-blue-600 hover:text-blue-700"
-              >
+              <a :href="preview.entry.url" target="_blank" rel="noreferrer"
+                class="text-xs text-blue-600 hover:text-blue-700">
                 新窗口打开
               </a>
             </div>
-            <p
-              v-if="preview.entry.sha256"
-              class="select-all border-b border-gray-200 bg-white px-3 py-1 font-mono text-[11px] text-gray-400"
-            >
+            <p v-if="preview.entry.sha256"
+              class="select-all border-b border-gray-200 bg-white px-3 py-1 font-mono text-[11px] text-gray-400">
               {{ preview.entry.sha256 }}
             </p>
 
             <p v-if="preview.kind === 'loading'" class="p-4 text-sm text-gray-500">加载中…</p>
             <p v-else-if="preview.kind === 'error'" class="p-4 text-sm text-red-500">{{ preview.message }}</p>
-            <div
-              v-else-if="preview.kind === 'too-large' || preview.kind === 'binary'"
-              class="flex flex-wrap items-center gap-3 p-4 text-sm text-gray-600"
-            >
+            <div v-else-if="preview.kind === 'too-large' || preview.kind === 'binary'"
+              class="flex flex-wrap items-center gap-3 p-4 text-sm text-gray-600">
               <span>{{ preview.message }}</span>
-              <a
-                :href="preview.entry.url"
-                target="_blank"
-                rel="noreferrer"
-                class="text-blue-600 hover:text-blue-700"
-              >
+              <a :href="preview.entry.url" target="_blank" rel="noreferrer" class="text-blue-600 hover:text-blue-700">
                 新窗口打开
               </a>
             </div>
@@ -523,18 +494,16 @@ onMounted(load)
           <span class="text-xs text-gray-500">仅管理员可见；破坏性操作立即生效且不可撤销</span>
         </div>
 
-        <p v-if="adminMessage" class="mt-2 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p v-if="adminMessage"
+          class="mt-2 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
           {{ adminMessage }}
         </p>
         <p v-if="adminError" class="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
           {{ adminError }}
         </p>
 
-        <div
-          ref="deleteSection"
-          class="mt-3 rounded border p-3"
-          :class="focusedAction === 'delete' ? 'border-red-400 bg-white ring-2 ring-red-100' : 'border-gray-200 bg-white'"
-        >
+        <div ref="deleteSection" class="mt-3 rounded border p-3"
+          :class="focusedAction === 'delete' ? 'border-red-400 bg-white ring-2 ring-red-100' : 'border-gray-200 bg-white'">
           <h3 class="text-sm font-bold text-gray-800">删除</h3>
           <p class="mt-1 text-xs text-gray-500">
             确认弹层内需先原样输入完整包名
@@ -542,11 +511,9 @@ onMounted(load)
             才能提交删除该版本（防止误点）。
           </p>
           <p class="mt-2 font-mono text-xs text-gray-500">待删版本：{{ selectedVersion || '—' }}</p>
-          <button
-            type="button"
+          <button type="button"
             class="mt-2 rounded border border-red-300 bg-red-50 px-2.5 py-1 text-xs text-red-700 hover:bg-red-100"
-            @click="deleteOpen = true"
-          >
+            @click="deleteOpen = true">
             打开删除确认…
           </button>
         </div>
@@ -555,29 +522,21 @@ onMounted(load)
           <AlertDialogPortal>
             <AlertDialogOverlay class="fixed inset-0 z-40 bg-black/30" />
             <AlertDialogContent
-              class="fixed left-1/2 top-1/2 z-50 w-[30rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-md border border-gray-200 bg-white p-4 shadow-xl"
-            >
+              class="fixed left-1/2 top-1/2 z-50 w-[30rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-md border border-gray-200 bg-white p-4 shadow-xl">
               <AlertDialogTitle class="text-sm font-bold text-gray-800">删除 {{ fullName }}</AlertDialogTitle>
               <AlertDialogDescription class="mt-1 text-xs text-gray-500">
                 破坏性操作立即生效且不可撤销。先原样输入完整包名解锁按钮；删除整个包还需勾选确认。
               </AlertDialogDescription>
 
               <div class="mt-3 flex flex-wrap items-center gap-2">
-                <input
-                  v-model="confirmName"
-                  type="text"
-                  :placeholder="fullName"
-                  class="w-56 rounded border border-gray-300 px-2 py-1 font-mono text-xs"
-                />
+                <input v-model="confirmName" type="text" :placeholder="fullName"
+                  class="w-56 rounded border border-gray-300 px-2 py-1 font-mono text-xs" />
                 <span class="font-mono text-xs text-gray-500">待删版本：{{ selectedVersion || '—' }}</span>
               </div>
               <div class="mt-2 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
+                <button type="button"
                   class="rounded border border-red-300 bg-red-50 px-2.5 py-1 text-xs text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40"
-                  :disabled="!confirmNameOk || !selectedVersion || deleting"
-                  @click="removeVersion"
-                >
+                  :disabled="!confirmNameOk || !selectedVersion || deleting" @click="removeVersion">
                   删除该版本
                 </button>
                 <span v-if="deleting" class="text-xs text-gray-500">处理中…</span>
@@ -587,12 +546,9 @@ onMounted(load)
                 <HubCheckbox v-model="confirmWhole" />
                 确认删除整个包（全部 {{ detail.versions.length }} 个版本）
               </label>
-              <button
-                type="button"
+              <button type="button"
                 class="mt-2 rounded border border-red-400 bg-red-600 px-2.5 py-1 text-xs text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
-                :disabled="!confirmNameOk || !confirmWhole || deleting"
-                @click="removePackage"
-              >
+                :disabled="!confirmNameOk || !confirmWhole || deleting" @click="removePackage">
                 删除整个包
               </button>
 
@@ -602,8 +558,7 @@ onMounted(load)
 
               <div class="mt-4 flex justify-end">
                 <AlertDialogCancel
-                  class="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                >
+                  class="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50">
                   取消
                 </AlertDialogCancel>
               </div>
@@ -611,20 +566,13 @@ onMounted(load)
           </AlertDialogPortal>
         </AlertDialogRoot>
 
-        <div
-          ref="publishSection"
-          class="mt-3 rounded border p-3"
-          :class="
-            focusedAction === 'publish' ? 'border-blue-400 bg-white ring-2 ring-blue-100' : 'border-gray-200 bg-white'
-          "
-        >
+        <div ref="publishSection" class="mt-3 rounded border p-3" :class="focusedAction === 'publish' ? 'border-blue-400 bg-white ring-2 ring-blue-100' : 'border-gray-200 bg-white'
+          ">
           <h3 class="text-sm font-bold text-gray-800">发布新版本</h3>
           <p class="mt-1 text-xs text-gray-500">选择本地 .tgz / .tar.gz 归档（须含 manifest.json）上传。</p>
-          <button
-            type="button"
+          <button type="button"
             class="mt-2 rounded border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs text-blue-700 hover:bg-blue-100"
-            @click="publishOpen = true"
-          >
+            @click="publishOpen = true">
             发布新版本…
           </button>
         </div>
@@ -633,27 +581,18 @@ onMounted(load)
           <DialogPortal>
             <DialogOverlay class="fixed inset-0 z-40 bg-black/30" />
             <DialogContent
-              class="fixed left-1/2 top-1/2 z-50 w-[28rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-md border border-gray-200 bg-white p-4 shadow-xl"
-            >
+              class="fixed left-1/2 top-1/2 z-50 w-[28rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-md border border-gray-200 bg-white p-4 shadow-xl">
               <DialogTitle class="text-sm font-bold text-gray-800">发布新版本</DialogTitle>
               <DialogDescription class="mt-1 text-xs text-gray-500">
                 选择本地 .tgz / .tar.gz 归档（须含 manifest.json）上传；同名版本已存在会被服务端拒绝。
               </DialogDescription>
 
               <div class="mt-3 flex flex-wrap items-center gap-2">
-                <input
-                  ref="fileInput"
-                  type="file"
-                  accept=".tgz,.tar.gz,application/gzip"
-                  class="text-xs"
-                  @change="onPickArchive"
-                />
-                <button
-                  type="button"
+                <input ref="fileInput" type="file" accept=".tgz,.tar.gz,application/gzip" class="text-xs"
+                  @change="onPickArchive" />
+                <button type="button"
                   class="rounded border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
-                  :disabled="!publishFile || publishing"
-                  @click="publish"
-                >
+                  :disabled="!publishFile || publishing" @click="publish">
                   上传发布
                 </button>
                 <span v-if="publishing" class="text-xs text-gray-500">上传中…</span>
@@ -665,8 +604,7 @@ onMounted(load)
 
               <div class="mt-4 flex justify-end">
                 <DialogClose
-                  class="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                >
+                  class="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50">
                   关闭
                 </DialogClose>
               </div>

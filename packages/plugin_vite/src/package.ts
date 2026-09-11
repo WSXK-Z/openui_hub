@@ -1,8 +1,9 @@
 /**
- * hubPackage —— 组件开发者打包插件（读项目级综合配置 oui.json）。
+ * hubPackage —— 组件开发者打包插件。
  *
- * 配置是一个项目一份：公共段（连接 / 默认 type / cssStrategy / peer / outDir）
- * + 本项目全部组件的 manifest 条目 components[]。构建（一次 vite build 多入口）后，
+ * 配置分两份：`oui.json` 的公共默认值（type / cssStrategy / peer / outDir / uno）
+ * + `oui.components.json` 的组件清单 components[]（每个组件可单独写自己的 type/cssStrategy/
+ * outDir/peer，并记录发布到的 hub 地址 registry）。构建（一次 vite build 多入口）后，
  * 插件把每个登记的组件打成标准包：
  *   <pkgDir>/dist/<slug>.mjs + dist/style.css + manifest.json + source/** + [types/**]（types 与 dist 同级）
  * 其中 <pkgDir> = 组件条目 outDir（相对工程根）或 <cfg.outDir>/<name>@<version>
@@ -15,19 +16,26 @@
  * entry.typesFiles 记录之，供 `oui use` 在消费端落盘精确类型。写字符串＝显式入口（缺失即
  * 构建失败），写 false＝显式不提供（不探测，消费端即 any）。
  *
- * oui.json 结构：
+ * `oui.json`：
  * ```json
  * {
- *   "connection": ["default"],
  *   "type": "vue-component", "cssStrategy": "vanilla",
- *   "peer": { "vue": "^3.5.0" }, "outDir": "pkg",
- *   "uno": true,
+ *   "peer": { "vue": "^3.5.0" }, "outDir": "pkg", "uno": true
+ * }
+ * ```
+ * `oui.components.json`：
+ * ```json
+ * {
  *   "components": [
- *     { "name": "@oui/button", "version": "0.1.0", "entry": "src/ui/button/button.ts",
- *       "description": "…", "type": "…", "cssStrategy": "…", "outDir": "…", "peer": {…} }
+ *     { "name": "@oui/button", "version": "0.1.0", "entry": "src/ui/button/index.ts",
+ *       "registry": "http://127.0.0.1:8787", "description": "…", "type": "…", "cssStrategy": "…" }
  *   ]
  * }
  * ```
+ * 组件入口（`entry`）按 hub 组件契约导出：默认导出组件描述对象
+ * `{ name, title, description, meta, component }`（`component` 为组件本体，运行时/预览按它渲染），
+ * 并具名导出组件本体，供构建期使用方 `import { Button } from 'oui-hub:@oui/button'`。
+ * `oui create <@scope/name>` 按此契约生成模板。
  * `uno: true`：组件源码可用 UnoCSS 原子类。unocss/vite 在纯库（无 HTML）构建不产出
  * css，故由本插件在 closeBundle 用项目 uno.config（vite loadConfigFromFile 加载）的
  * presets 对组件源码做原子类提取并 generate，合并进各包 style.css（presetMini 等
@@ -44,7 +52,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { loadConfigFromFile, type Plugin, type UserConfig } from 'vite'
 
-const PKG_CONFIG_FILE = 'oui.json'
+import { COMPONENTS_FILE, PKG_CONFIG_FILE, readComponents, readDefaults, readJsonFile } from './config'
+
 const BUILD_TMP = '.oui-hub/.build'
 /** 原子类提取时扫描的源码扩展名（组件工程 src 树）。 */
 const SCAN_EXTS = new Set(['ts', 'tsx', 'vue', 'js', 'jsx'])
@@ -64,10 +73,8 @@ const DTS_EXT: Record<string, string> = {
   vue: '.vue.d.ts',
 }
 
-/** 项目级综合配置（cli 公共段 + 默认 + 组件清单）。 */
-export interface HubPackageConfig {
-  /** 项目选择的 hub 连接名（`oui init` 写入，可多个；首个为默认连接） */
-  connection?: string[]
+/** `oui.json` 里的公共默认段。 */
+export interface HubDefaults {
   type?: string
   cssStrategy?: string
   peer?: Record<string, string>
@@ -75,6 +82,12 @@ export interface HubPackageConfig {
   outDir?: string
   /** true = 组件源码使用 UnoCSS 原子类（需工程装 unocss 并配 uno.config） */
   uno?: boolean
+  /** 使用锁文件名（消费端），默认 oui.lock.json */
+  lockFile?: string
+}
+
+/** hubPackage 的工程配置：`oui.json` 默认值 + `oui.components.json` 组件清单。 */
+export interface HubPackageConfig extends HubDefaults {
   /** 本项目所有可发布组件 */
   components: HubComponentConfig[]
 }
@@ -85,6 +98,8 @@ export interface HubComponentConfig {
   name: string
   /** semver 版本，必填 */
   version: string
+  /** 该组件发布到的 hub 地址 */
+  registry?: string
   description?: string
   type?: string
   cssStrategy?: string
@@ -104,29 +119,6 @@ export interface HubComponentConfig {
 
 interface PkgJsonLike {
   peerDependencies?: Record<string, string>
-}
-
-function readJsonFile<T>(file: string): T | null {
-  if (!existsSync(file)) return null
-  try {
-    return JSON.parse(readFileSync(file, 'utf8')) as T
-  } catch {
-    return null
-  }
-
-}
-
-function readProjectConfig(file: string): HubPackageConfig | null {
-  const raw = readJsonFile<HubPackageConfig & { extends?: string }>(file)
-  if (!raw) return null
-  if (!raw.extends) return raw
-  const parent = readJsonFile<HubPackageConfig>(resolve(dirname(file), raw.extends))
-  if (!parent) throw new Error(`hubPackage: cannot load parent config ${raw.extends}`)
-  return {
-    ...parent,
-    ...raw,
-    components: raw.components ?? parent.components,
-  }
 }
 
 /** 包名末段作为文件基名与默认目录片段：@oui/button → button */
@@ -263,7 +255,7 @@ async function generateUnoCss(cfgRoot: string, warn: (m: string) => void): Promi
   return css
 }
 
-/** 从 `from` 向上找首个含 oui.json 的目录；找不到回落 `from`（随后 loadConfig 会报错）。 */
+/** 从 `from` 向上找首个含 oui.json（路由文件）的目录；找不到回落 `from`（随后 loadConfig 会报错）。 */
 function findPkgConfigDir(from: string): string {
   let dir = from
   for (;;) {
@@ -278,20 +270,20 @@ export function hubPackage(): Plugin {
   let cfgRoot = ''
 
   function loadConfig(root: string): HubPackageConfig {
-    const selected = process.env.OUI_CONFIG?.trim() || PKG_CONFIG_FILE
-    const cfg = readProjectConfig(resolve(root, selected))
-    if (!cfg || !Array.isArray(cfg.components) || cfg.components.length === 0) {
+    const defaults = readDefaults<HubDefaults>(root) ?? {}
+    const components = readComponents<HubComponentConfig>(root)
+    if (components.length === 0) {
       throw new Error(
-        `hubPackage: ${PKG_CONFIG_FILE} 缺少 components（本项目所有组件的清单，至少一项）。` +
+        `hubPackage: ${COMPONENTS_FILE} 缺少 components（本项目所有组件的清单，至少一项）。` +
           '示例见 hubPackage 头注释。',
       )
     }
-    for (const c of cfg.components) {
+    for (const c of components) {
       if (!c.entry || !c.name || !c.version) {
         throw new Error(`hubPackage: 组件条目须含 name/version/entry：${JSON.stringify(c)}`)
       }
     }
-    return cfg
+    return { ...defaults, components }
   }
 
   /** 组件的生效配置与包目录（公共默认在此合并）。 */

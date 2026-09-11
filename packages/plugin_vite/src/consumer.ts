@@ -9,9 +9,14 @@
  * 代码内：`import { Button } from 'oui-hub:@oui/button'`
  *
  * 机制：
- * - `oui-hub:<name>` 虚拟导入 → 读 `<root>/oui-hub.lock.json` → fetch 远程预编译 ESM
- *   （磁盘缓存 node_modules/.hub-cache/，内容寻址 key）→ 注入远程 css 虚拟导入 →
- *   transform 阶段把裸导入（vue/reka-ui）改写为宿主解析结果 → 依赖对齐、单 Vue 实例。
+ * - `oui-hub:<name>` 虚拟导入 → 读 `<root>/oui.lock.json`（或 `oui.json` 的 lockFile）→
+ *   按条目自带的 hub 地址取该版本 manifest（决定 module/css 相对路径）→ fetch 远程预编译 ESM
+ *   （磁盘缓存 node_modules/.hub-cache/，内容寻址 key）→ 注入远程 css；
+ *   虚拟导入 → transform 阶段把裸导入（vue/reka-ui）改写为宿主解析结果 → 依赖对齐、单 Vue 实例。
+ * - 远程模块的默认导出＝组件描述对象 `{ name, title?, description?, meta?, component }`：
+ *   `import { Button } from 'oui-hub:@oui/button'` 拿具名导出的组件本体，
+ *   `import desc from 'oui-hub:@oui/button'` 拿描述对象（运行时由 loadRemote 取 `component`）。
+ * - 每个 lock 条目自带 hub 地址（`registry`），构建期可用 `OUI_REGISTRY` 临时改指向。
  * - 无 lock 文件时插件完全无操作（对未用远程包的项目零干扰）。
  *
  * v1 约束（写死）：远程产物为单文件 ESM + 独立 css（见 registry 构建）；远程模块内的
@@ -24,85 +29,39 @@ import { join } from 'node:path'
 
 import type { Plugin, ResolvedConfig } from 'vite'
 
+import { lockFile, readJsonFile } from './config'
+
 export interface LockPackageEntry {
   version: string
-  /** 相对产物路径（新格式，推荐）：实际 URL = <registry>/v/<name>@<version>/<module> */
-  module?: string
-  css?: string[]
-  /** 旧格式：写死的绝对 URL（仍兼容） */
-  moduleUrl?: string
-  cssUrls?: string[]
+  /** 该包来源 hub 地址（`oui use` 写入） */
+  registry?: string
+}
+
+/** 某版本的产物描述（由组件发布时写入，使用端只读）。 */
+export interface HubManifest {
+  entry?: {
+    /** ESM 产物相对路径 */
+    module?: string
+    /** 样式相对路径列表 */
+    css?: string[]
+  }
 }
 
 export interface HubLock {
-  /** 连接名（凭据在 ~/.oui/credentials.json） */
-  connection?: string
-  /** 旧格式：写死的 registry */
-  registry?: string
   packages: Record<string, LockPackageEntry>
 }
 
-/** 凭据文件里的连接（只读 registry；token 与本插件无关）。 */
-function connectionRegistry(name?: string): string | null {
-  try {
-    const home = process.env['OUI_HOME'] ?? process.env['USERPROFILE'] ?? process.env['HOME']
-    if (!home) return null
-    const raw = readFileSync(join(home, '.oui', 'credentials.json'), 'utf8')
-    const store = JSON.parse(raw) as {
-      default?: string
-      connections?: Record<string, { registry?: string }>
-    }
-    const key = name && name.trim() ? name.trim() : store.default
-    const registry = key ? store.connections?.[key]?.registry : undefined
-    return typeof registry === 'string' && registry.trim() ? registry.trim().replace(/\/+$/, '') : null
-  } catch {
-    return null
-  }
-}
-
-/**
- * 解析 registry 基址：`OUI_REGISTRY` > lock.connection（→ 凭据文件）> 旧 lock.registry
- * > 同目录 oui.json 的 connection。
- * 返回 null 表示无法确定（调用方给出明确报错）。
- */
-export function resolveRegistry(root: string, lock: HubLock): string | null {
+/** 该包的 hub 地址：`OUI_REGISTRY`（构建期覆盖）> lock 条目自带地址。 */
+export function packageRegistry(entry: LockPackageEntry): string | null {
   const env = process.env['OUI_REGISTRY']
   if (env && env.trim()) return env.trim().replace(/\/+$/, '')
-  const fromConn = connectionRegistry(lock.connection)
-  if (fromConn) return fromConn
-  if (lock.registry && lock.registry.trim()) return lock.registry.trim().replace(/\/+$/, '')
-  try {
-    const cfg = JSON.parse(readFileSync(join(root, 'oui.json'), 'utf8')) as {
-      connection?: unknown
-      registry?: unknown
-    }
-    const viaCfgConn = connectionRegistry(Array.isArray(cfg.connection) ? cfg.connection[0] : undefined)
-    if (viaCfgConn) return viaCfgConn
-    if (typeof cfg.registry === 'string' && cfg.registry.trim()) {
-      return cfg.registry.trim().replace(/\/+$/, '')
-    }
-  } catch {
-    /* 无配置 */
-  }
-  return null
+  const reg = entry.registry?.trim()
+  return reg ? reg.replace(/\/+$/, '') : null
 }
 
-/** 取某包的 module / css 实际 URL（优先相对字段，回退旧绝对字段）。 */
-export function packageUrls(
-  registry: string | null,
-  name: string,
-  entry: LockPackageEntry,
-): { moduleUrl: string; cssUrls: string[] } | null {
-  const cssUrls = entry.cssUrls?.filter((u) => !!u) ?? []
-  if (entry.moduleUrl && (!entry.module || registry === null)) {
-    return { moduleUrl: entry.moduleUrl, cssUrls }
-  }
-  if (!entry.module || !registry) return null
-  const head = `${registry}/v/${name}@${entry.version}`
-  return {
-    moduleUrl: `${head}/${entry.module}`,
-    cssUrls: (entry.css ?? []).filter((p) => !!p).map((p) => `${head}/${p}`),
-  }
+/** 某版本的 manifest 地址（产物相对路径的权威来源）。 */
+export function manifestUrl(registry: string, name: string, version: string): string {
+  return `${registry}/v/${name}@${version}/manifest.json`
 }
 
 export const CSS_PREFIX = 'oui-hub-css:'
@@ -113,16 +72,9 @@ export function sha256Hex(input: string): string {
   return createHash('sha256').update(input).digest('hex')
 }
 
-/** 锁文件名：取同目录 oui.json 的 lockFile，缺省 oui-hub.lock.json。 */
+/** 锁文件名：`oui.json` 的 lockFile，缺省 `oui.lock.json`。 */
 export function lockFileName(root: string): string {
-  try {
-    const raw = readFileSync(join(root, 'oui.json'), 'utf8')
-    const cfg = JSON.parse(raw) as { lockFile?: unknown }
-    if (typeof cfg?.lockFile === 'string' && cfg.lockFile.trim()) return cfg.lockFile.trim()
-  } catch {
-    /* 无配置或畸形 → 用默认名 */
-  }
-  return 'oui-hub.lock.json'
+  return lockFile(root)
 }
 
 /** 读 lock；缺失或畸形返回 null（插件无操作）。 */
@@ -198,27 +150,48 @@ async function fetchCached(cwd: string, url: string, context: { warn: (msg: stri
   return text
 }
 
-/** 解析某包的 module/css 实际 URL；无法确定 registry 时抛出可操作的错误。 */
-function resolveEntryUrls(
-  root: string,
-  lock: HubLock,
+/** 解析某包的产物 URL（读该版本 manifest）；无法确定 hub 地址或未声明入口时抛出可操作的错误。 */
+async function packageAssets(
   name: string,
   entry: LockPackageEntry,
-): { moduleUrl: string; cssUrls: string[] } {
-  const registry = resolveRegistry(root, lock)
-  const urls = packageUrls(registry, name, entry)
-  if (!urls) {
+  manifest: (url: string) => Promise<HubManifest>,
+): Promise<{ moduleUrl: string; cssUrls: string[] }> {
+  const registry = packageRegistry(entry)
+  if (!registry) {
     throw new Error(
-      `openui_hub: 无法确定 ${name} 的下载地址。lock 使用相对路径，需要 registry：` +
-        `请设置环境变量 OUI_REGISTRY，或执行 \`oui login\`（连接 ${lock.connection ?? 'default'}）后重试。`,
+      `openui_hub: 无法确定 ${name} 的下载地址。` +
+        `请用 \`oui use ${name}\` 重新写入带 registry 的锁定条目，或设置环境变量 OUI_REGISTRY。`,
     )
   }
-  return urls
+  const m = await manifest(manifestUrl(registry, name, entry.version))
+  const mod = m.entry?.module
+  if (!mod) {
+    throw new Error(`openui_hub: ${name}@${entry.version} 的 manifest 未声明 entry.module`)
+  }
+  const head = `${registry}/v/${name}@${entry.version}`
+  return {
+    moduleUrl: `${head}/${mod}`,
+    cssUrls: (m.entry?.css ?? []).filter((p) => !!p).map((p) => `${head}/${p}`),
+  }
 }
 
 export function hubVite(): Plugin {
   let cfg: ResolvedConfig | null = null
   let lock: HubLock | null = null
+  // manifest 每次构建内只取一次（同版本复用）
+  const manifests = new Map<string, Promise<HubManifest>>()
+
+  function manifest(url: string): Promise<HubManifest> {
+    const hit = manifests.get(url)
+    if (hit) return hit
+    const pending = (async () => {
+      const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+      if (!res.ok) throw new Error(`openui_hub: 读取 manifest 失败 ${url} → HTTP ${res.status}`)
+      return (await res.json()) as HubManifest
+    })()
+    manifests.set(url, pending)
+    return pending
+  }
 
   return {
     name: 'oui-hub-vite',
@@ -245,7 +218,7 @@ export function hubVite(): Plugin {
         const name = nameFromId(id, '\0oui-hub:')
         const entry = lock.packages[name]
         if (!entry) return null
-        const urls = resolveEntryUrls(root, lock, name, entry)
+        const urls = await packageAssets(name, entry, manifest)
         const code = await fetchCached(root, urls.moduleUrl, this)
         // 注入 css 虚拟导入（v1 支持首个 css；多余打印忽略）
         const css = urls.cssUrls[0]
@@ -256,7 +229,7 @@ export function hubVite(): Plugin {
         const name = nameFromId(id, '\0oui-hub-css:')
         const entry = lock.packages[name]
         if (!entry) return null
-        const cssUrl = resolveEntryUrls(root, lock, name, entry).cssUrls[0]
+        const cssUrl = (await packageAssets(name, entry, manifest)).cssUrls[0]
         if (!cssUrl) return null
         const code = await fetchCached(root, cssUrl, this)
         return { code, map: null }

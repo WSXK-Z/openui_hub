@@ -1,7 +1,0 @@
-{
-  "$schema": "node_modules/@openui_hub/cli/oui.schema.json",
-  "connection": [
-    "default"
-  ],
-  "extends": "oui.json"
-}
