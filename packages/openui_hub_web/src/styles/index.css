@@ -1,0 +1,49 @@
+/*
+ * openui_hub 平台前端基础样式：全局 reset。
+ *
+ * 两件事：
+ * 1. 常规 reset（box-sizing / body / 标题与表单元素的默认外观）；
+ * 2. 镜像 preflight 的边框重置 —— UnoCSS preset-mini 不含 preflight，而 `border-*`
+ *    宽度工具只设 border-width，border-style 默认 none 时 computed border-width 恒为 0。
+ *
+ * 远程组件不自带 preflight（组件包只编译自身用到的原子类），预览 iframe / 同页 shim
+ * 都落在宿主文档里，因此这份 reset 同时是远程组件边框能显示的前提，不可省略。
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-style: solid;
+  border-width: 0;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  color: rgb(31 41 55);
+  background-color: #fff;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

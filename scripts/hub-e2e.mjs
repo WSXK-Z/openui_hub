@@ -1,5 +1,5 @@
 /**
- * dpui_hub 端到端验证：registry 构建 → server 启动 → publish → 分发断言 → 重复发布 409 →
+ * openui_hub 端到端验证：registry 构建 → server 启动 → publish → 分发断言 → 重复发布 409 →
  * dpui use 生成 lock → example 构建期远程加载。任一步失败即非零退出。
  * cwd = 仓库根（hub:e2e 已保证）。
  */
@@ -10,17 +10,17 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const ROOT = process.cwd()
-const CLI_DIR = join(ROOT, 'packages/dpui_hub_cli')
+const CLI_DIR = join(ROOT, 'packages/openui_hub_cli')
 const CLI_BIN = join(
   CLI_DIR,
   'target/release/dpui' + (process.platform === 'win32' ? '.exe' : ''),
 )
-const SERVER_DIR = join(ROOT, 'packages/dpui_hub_server')
+const SERVER_DIR = join(ROOT, 'packages/openui_hub_server')
 const SERVER_BIN = join(SERVER_DIR, 'target/debug/dpui-hub-server.exe')
 const SERVER_BIN_UNIX = join(SERVER_DIR, 'target/debug/dpui-hub-server')
 const SERVER_EXE =
   process.env.HUB_SERVER_BIN ?? (process.platform === 'win32' ? SERVER_BIN : SERVER_BIN_UNIX)
-const REGISTRY_DIR = join(ROOT, 'packages/dpui_hub_registry')
+const REGISTRY_DIR = join(ROOT, 'packages/openui_hub_registry')
 /** 从 dpui.pkg.json 动态取组件（版本/目录随配置，杜绝陈旧 pkg 目录误导断言） */
 const pkgCfg = JSON.parse(readFileSync(join(REGISTRY_DIR, 'dpui.pkg.json'), 'utf8'))
 const pkgs = pkgCfg.components.map((c) => ({
@@ -30,7 +30,7 @@ const pkgs = pkgCfg.components.map((c) => ({
   dir: join(REGISTRY_DIR, 'pkg', `${c.name}@${c.version}`),
 }))
 const BUTTON = pkgs[0]
-const EXAMPLE_DIR = join(ROOT, 'packages/dpui_hub_example')
+const EXAMPLE_DIR = join(ROOT, 'packages/openui_hub_example')
 const REGISTRY = 'http://127.0.0.1:18987'
 const TOKEN = 'dev-token-e2e'
 

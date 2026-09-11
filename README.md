@@ -1,18 +1,18 @@
-# dpui_hub
+# openui_hub
 
-组件包枢纽（hub）monorepo（pnpm workspace）：`dpui_hub_*` 负责组件包的构建、发布、分发与远程加载。
+组件包枢纽（hub）monorepo（pnpm workspace）：`openui_hub_*` 负责组件包的构建、发布、分发与远程加载。
 
 ## 包结构
 
 | 包                           | 说明                                                                 |
 | ---------------------------- | -------------------------------------------------------------------- |
-| `packages/dpui_hub_registry` | 官方组件真源：样例组件构建为可发布包（manifest + dist）              |
-| `packages/dpui_hub_server`   | 托管服务端（Rust/axum）：publish / 分发 / manifest 校验              |
-| `packages/dpui_hub_cli`      | `dpui` 本地终端工具（Rust）：npm 单包安装后提供 `dpui` 命令          |
-| `packages/dpui_hub_vite`     | Vite 插件：构建期远程组件接入（`dpui-hub:@scope/name`）              |
-| `packages/dpui_hub_runtime`  | 运行时远程加载：loader + `HubRemote` Vue 组件                        |
-| `packages/dpui_hub_web`      | 平台使用端（组件瀑布流卡片 + 远程渲染预览，管理员可删除/发布）       |
-| `packages/dpui_hub_example`  | 独立示例工程（使用者视角，验证构建期插件通道）                       |
+| `packages/openui_hub_registry` | 官方组件真源：样例组件构建为可发布包（manifest + dist）              |
+| `packages/openui_hub_server`   | 托管服务端（Rust/axum）：publish / 分发 / manifest 校验              |
+| `packages/openui_hub_cli`      | `dpui` 本地终端工具（Rust）：npm 单包安装后提供 `dpui` 命令          |
+| `packages/openui_hub_vite`     | Vite 插件：构建期远程组件接入（`dpui-hub:@scope/name`）              |
+| `packages/openui_hub_runtime`  | 运行时远程加载：loader + `HubRemote` Vue 组件                        |
+| `packages/openui_hub_web`      | 平台使用端（组件瀑布流卡片 + 远程渲染预览，管理员可删除/发布）       |
+| `packages/openui_hub_example`  | 独立示例工程（使用者视角，验证构建期插件通道）                       |
 
 ## 常用命令（根目录执行）
 
@@ -37,7 +37,7 @@ pnpm hub:use-cli                   # 经 workspace 依赖执行 `dpui --help`
 pnpm hub:dev:web                   # 启动平台前端（http://localhost:5173）
 ```
 
-平台前端（`packages/dpui_hub_web`）自带 UnoCSS 配置与基础 reset，仓库内只依赖 `@dp_ui/hub_runtime`；
+平台前端（`packages/openui_hub_web`）自带 UnoCSS 配置与基础 reset，仓库内只依赖 `@dp_ui/hub_runtime`；
 远程组件预览要求 `hub_server` 已启动（浏览器直连，不做 dev proxy）。
 
 ```sh

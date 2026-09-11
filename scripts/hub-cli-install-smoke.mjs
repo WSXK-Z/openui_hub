@@ -10,7 +10,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const CLI_DIR = join(ROOT, 'packages/dpui_hub_cli')
+const CLI_DIR = join(ROOT, 'packages/openui_hub_cli')
 const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 function run(cwd, cmd, args) {

@@ -24,13 +24,13 @@ const binName = isWin ? 'dpui.exe' : 'dpui'
 
 // 1) cargo release 构建（增量）
 const res = spawnSync('cargo', ['build', '--release'], {
-  cwd: join(ROOT, 'packages/dpui_hub_cli'),
+  cwd: join(ROOT, 'packages/openui_hub_cli'),
   stdio: 'inherit',
 })
 if (res.status !== 0) process.exit(res.status ?? 1)
 
 // 2) 归集到 vendor/<os>-<arch>/
-const destDir = join(ROOT, 'packages/dpui_hub_cli/vendor', target)
+const destDir = join(ROOT, 'packages/openui_hub_cli/vendor', target)
 mkdirSync(destDir, { recursive: true })
-cpSync(join(ROOT, 'packages/dpui_hub_cli/target/release', binName), join(destDir, binName))
-console.log(`已归集 ${target} → packages/dpui_hub_cli/vendor/${target}/${binName}`)
+cpSync(join(ROOT, 'packages/openui_hub_cli/target/release', binName), join(destDir, binName))
+console.log(`已归集 ${target} → packages/openui_hub_cli/vendor/${target}/${binName}`)
