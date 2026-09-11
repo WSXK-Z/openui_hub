@@ -8,6 +8,7 @@ mod cmd;
 mod config;
 mod cred;
 mod decl;
+mod style;
 mod text;
 mod types;
 mod vscode;
@@ -239,7 +240,7 @@ enum HubCmd {
 #[tokio::main]
 async fn main() {
     if let Err(e) = run().await {
-        eprintln!("{e:#}");
+        style::eout(style::error(format!("{e:#}")));
         std::process::exit(1);
     }
 }

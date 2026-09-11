@@ -9,6 +9,8 @@ name = "oui"
 path = "src/main.rs"
 
 [dependencies]
+anstream = "1"
+anstyle = "1"
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 flate2 = "1"

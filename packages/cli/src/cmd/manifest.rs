@@ -9,6 +9,8 @@ use std::{
 use anyhow::{anyhow, bail, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::style;
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ManifestOut {
@@ -128,9 +130,21 @@ pub(crate) fn cmd_manifest(
     let text = format!("{}\n", serde_json::to_string_pretty(&out)?);
     fs::write(&manifest_path, text)?;
 
-    println!("manifest 已写入 {}", manifest_path.display());
-    println!("{name}@{version} entry={}", out.entry.module);
-    println!("发布：oui publish --dir {dir} --registry <hub> --token <token>");
+    style::out(format!(
+        "manifest {} {}",
+        style::ok("已写入"),
+        style::muted(manifest_path.display())
+    ));
+    style::out(format!(
+        "{} entry={}",
+        style::strong(format!("{name}@{version}")),
+        style::accent(&out.entry.module)
+    ));
+    style::out(format!(
+        "{} {} --dir {dir} --registry <hub> --token <token>",
+        style::strong("发布："),
+        style::accent("oui publish")
+    ));
     Ok(())
 }
 

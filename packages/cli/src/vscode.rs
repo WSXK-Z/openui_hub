@@ -8,6 +8,7 @@ use std::{
 use anyhow::{Context, Result};
 
 use crate::cred::os_home;
+use crate::style;
 use crate::text::{find_string_value_of, find_value_pos, insert_into_object, read_string_value, replace_string_value};
 
 /// VS Code 折叠：父文件 → 子文件名（逗号分隔）。
@@ -47,7 +48,11 @@ pub(crate) fn fix_vscode_settings(root: &Path) -> Result<()> {
             NEST_CHILDREN.join(", ")
         );
         fs::write(&file, content).with_context(|| format!("写入失败: {}", file.display()))?;
-        println!("已创建 {}（file nesting）", file.display());
+        style::out(format!(
+            "{} {}（file nesting）",
+            style::ok("已创建"),
+            style::muted(file.display())
+        ));
         return Ok(());
     }
 
@@ -122,11 +127,19 @@ pub(crate) fn fix_vscode_settings(root: &Path) -> Result<()> {
     }
 
     if next == text {
-        println!("{}：已就绪，未改动", file.display());
+        style::out(format!(
+            "{}：{}",
+            style::muted(file.display()),
+            style::ok("已就绪，未改动")
+        ));
         return Ok(());
     }
     fs::write(&file, next).with_context(|| format!("写入失败: {}", file.display()))?;
-    println!("已更新 {}（file nesting）", file.display());
+    style::out(format!(
+        "{} {}（file nesting）",
+        style::ok("已更新"),
+        style::muted(file.display())
+    ));
     Ok(())
 }
 

@@ -3,6 +3,7 @@
 use anyhow::{bail, Result};
 
 use crate::cred::{default_registry, known_registries};
+use crate::style;
 
 /// 询问 hub 地址（默认取 default_registry；非交互直接取用）。
 pub(crate) fn prompt_registry(label: &str, flag: Option<&str>) -> Result<String> {
@@ -22,14 +23,7 @@ pub(crate) fn prompt_registry(label: &str, flag: Option<&str>) -> Result<String>
 
 /// 交互式读取一行（去首尾空白）。stdin 无输入（EOF：非交互/CI）→ 报错。
 pub(crate) fn prompt(label: &str, hint: &str) -> Result<String> {
-    use std::io::Write;
-
-    if hint.is_empty() {
-        print!("{label}: ");
-    } else {
-        print!("{label} [{hint}]: ");
-    }
-    std::io::stdout().flush()?;
+    style::ask(label, hint)?;
     let mut line = String::new();
     if std::io::stdin().read_line(&mut line)? == 0 {
         bail!("需要交互输入；CI 场景请用 --no-input");

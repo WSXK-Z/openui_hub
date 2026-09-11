@@ -8,6 +8,7 @@ use crate::cred::{
     connection_named, cred_path, mask_secret, read_cred, write_cred, CredConnection,
     DEFAULT_CONNECTION,
 };
+use crate::style;
 
 /// `oui login`：交互式（或参数）录入 hub 地址/令牌并命名连接，写入 `~/.oui/credentials.json`。
 pub(crate) fn cmd_login(
@@ -71,7 +72,14 @@ pub(crate) fn cmd_login(
     } else {
         mask_secret(&token)
     };
-    println!("已保存连接 {name}（registry={registry}，token={masked}）→ {}", cred_path().display());
+    style::out(format!(
+        "{} {}（registry={}，token={}）→ {}",
+        style::ok("已保存连接"),
+        style::strong(name),
+        style::accent(&registry),
+        style::muted(masked),
+        style::muted(cred_path().display())
+    ));
     Ok(())
 }
 
@@ -85,8 +93,17 @@ pub(crate) fn cmd_hub_delete(name: &str) -> Result<()> {
     if store.default.as_deref() == Some(name) { store.default = store.connections.keys().next().cloned(); }
     write_cred(&store)?;
     match &store.default {
-        Some(d) => println!("已删除连接 {name}；默认连接：{d}"),
-        None => println!("已删除连接 {name}；已无其它连接"),
+        Some(d) => style::out(format!(
+            "{} {}；默认连接：{}",
+            style::ok("已删除连接"),
+            style::strong(name),
+            style::accent(d)
+        )),
+        None => style::out(format!(
+            "{} {}；已无其它连接",
+            style::ok("已删除连接"),
+            style::strong(name)
+        )),
     }
     Ok(())
 }
@@ -94,12 +111,22 @@ pub(crate) fn cmd_hub_delete(name: &str) -> Result<()> {
 pub(crate) fn cmd_hub_list() -> Result<()> {
     let store = read_cred();
     if store.connections.is_empty() {
-        println!("未配置任何 hub 连接；请先运行 `oui hub add`");
+        style::out(format!(
+            "{}；请先运行 {}",
+            style::warn("未配置任何 hub 连接"),
+            style::accent("`oui hub add`")
+        ));
         return Ok(());
     }
-    for (name, conn) in store.connections {
-        let marker = if store.default.as_deref() == Some(name.as_str()) { "*" } else { " " };
-        println!("{marker} {name}\t{}", conn.registry);
-    }
+    let rows: Vec<(String, String)> = store
+        .connections
+        .iter()
+        .map(|(name, conn)| {
+            let marker = if store.default.as_deref() == Some(name.as_str()) { "*" } else { " " };
+            (format!("{marker} {name}"), style::accent(&conn.registry).to_string())
+        })
+        .collect();
+    let count = rows.len();
+    style::table(("连接", "hub 地址"), &rows, Some(format!("共 {count} 个连接（* 为默认）")));
     Ok(())
 }

@@ -12,6 +12,7 @@ use crate::config::{
 };
 use crate::cred::default_registry;
 use crate::decl::fix_component_decl_pipeline;
+use crate::style;
 use crate::text::write_if_changed;
 
 /// `oui create` 的参数（未给项按 已登记条目 > oui.json > 内置默认 继承）。
@@ -115,7 +116,7 @@ pub(crate) fn cmd_create(args: CreateArgs) -> Result<()> {
             if is_version(&v) {
                 break v;
             }
-            eprintln!("版本格式错误（应为 x.y.z）: {v}");
+            style::eout(style::error(format!("版本格式错误（应为 x.y.z）: {v}")));
         },
     };
     let title = match args.title.clone().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()) {
@@ -187,9 +188,14 @@ pub(crate) fn cmd_create(args: CreateArgs) -> Result<()> {
         }
     }
     if created.is_empty() {
-        println!("模板文件已是最新：{entry_rel}、{vue_rel}");
+        style::out(format!(
+            "{}：{}、{}",
+            style::ok("模板文件已是最新"),
+            style::accent(&entry_rel),
+            style::accent(&vue_rel)
+        ));
     } else {
-        println!("已创建 {}", created.join("、"));
+        style::out(format!("{} {}", style::ok("已创建"), created.join("、")));
     }
 
     match &registry {
@@ -203,12 +209,27 @@ pub(crate) fn cmd_create(args: CreateArgs) -> Result<()> {
                 patch.insert("description".into(), json!(description));
             }
             let count = upsert_component(&root, name, patch)?;
-            println!("已登记组件 {name}@{version} → {reg}（components 共 {count} 项）");
+            style::out(format!(
+                "{} {} → {}（components 共 {count} 项）",
+                style::ok("已登记组件"),
+                style::strong(format!("{name}@{version}")),
+                style::accent(reg)
+            ));
         }
-        None => println!("已跳过登记（--no-register）；需要时运行 `oui register {name}`"),
+        None => style::out(format!(
+            "{}（{}）；需要时运行 {}",
+            style::muted("已跳过登记"),
+            style::accent("--no-register"),
+            style::accent(format!("`oui register {name}`"))
+        )),
     }
     fix_component_decl_pipeline(&root)?;
-    println!("后续：构建工程（如 `pnpm build`）→ `oui publish`");
+    style::out(format!(
+        "{}构建工程（如 {}）→ {}",
+        style::strong("后续："),
+        style::accent("`pnpm build`"),
+        style::accent("`oui publish`")
+    ));
     Ok(())
 }
 

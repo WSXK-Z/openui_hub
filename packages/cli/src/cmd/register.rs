@@ -9,6 +9,7 @@ use crate::config::{
     split_list, upsert_component, ComponentsFile, COMPONENTS_FILE,
 };
 use crate::cred::default_registry;
+use crate::style;
 
 /// `oui register` 的参数。
 pub(crate) struct RegisterArgs {
@@ -77,7 +78,7 @@ pub(crate) fn cmd_register(args: RegisterArgs) -> Result<()> {
             if is_version(&v) {
                 break v;
             }
-            eprintln!("版本格式错误（应为 x.y.z）: {v}");
+            style::eout(style::error(format!("版本格式错误（应为 x.y.z）: {v}")));
         },
     };
 
@@ -90,7 +91,7 @@ pub(crate) fn cmd_register(args: RegisterArgs) -> Result<()> {
             if !e.is_empty() {
                 break e;
             }
-            eprintln!("entry 不能为空");
+            style::eout(style::error("entry 不能为空"));
         },
     };
 
@@ -151,7 +152,16 @@ pub(crate) fn cmd_register(args: RegisterArgs) -> Result<()> {
     }
 
     let count = upsert_component(&root, name, patch)?;
-    println!("已登记组件 {name}@{version} → {registry}（components 共 {count} 项）");
-    println!("发布：先 vite build（或 SubPackage 构建），再执行 oui publish");
+    style::out(format!(
+        "{} {} → {}（components 共 {count} 项）",
+        style::ok("已登记组件"),
+        style::strong(format!("{name}@{version}")),
+        style::accent(&registry)
+    ));
+    style::out(format!(
+        "{}先 vite build（或 SubPackage 构建），再执行 {}",
+        style::strong("发布："),
+        style::accent("oui publish")
+    ));
     Ok(())
 }

@@ -8,6 +8,7 @@ use std::{
 use anyhow::{Context, Result};
 
 use crate::config::{read_components, types_disabled, PkgComponent, DTS_TSCONFIG};
+use crate::style;
 use crate::text::{json_string_value, replace_json_string_value};
 
 /// 组件工程（oui.json 的 components 里有未显式关闭类型的条目）的声明产出链路修复：
@@ -25,21 +26,36 @@ pub(crate) fn fix_component_decl_pipeline(root: &Path) -> Result<()> {
     if !cfg_path.is_file() {
         fs::write(&cfg_path, dts_tsconfig_content(root, &components))
             .with_context(|| format!("写入失败: {}", cfg_path.display()))?;
-        println!("已生成 {}（组件声明产出）", cfg_path.display());
+        style::out(format!(
+            "{} {}（组件声明产出）",
+            style::ok("已生成"),
+            style::muted(cfg_path.display())
+        ));
     }
 
     let cmd = decl_cmd(root, &components);
     if cmd.starts_with("vue-tsc") && !has_dep(root, "vue-tsc") {
-        println!("提示：未检测到 vue-tsc（.vue 组件产声明需要它）——请先 `pnpm add -D vue-tsc`");
+        style::out(format!(
+            "{}未检测到 vue-tsc（.vue 组件产声明需要它）——请先 {}",
+            style::warn("提示："),
+            style::accent("`pnpm add -D vue-tsc`")
+        ));
     }
 
     let pkg_json = root.join("package.json");
     let Ok(text) = fs::read_to_string(&pkg_json) else {
-        println!("提示：未找到 {}，构建脚本需前置 `{cmd} &&`", pkg_json.display());
+        style::out(format!(
+            "{}未找到 {}，构建脚本需前置 `{cmd} &&`",
+            style::warn("提示："),
+            style::muted(pkg_json.display())
+        ));
         return Ok(());
     };
     let Some(build) = json_string_value(&text, "build") else {
-        println!("提示：package.json 无 build 脚本——请加上 `\"build\": \"{cmd} && vite build\"`");
+        style::out(format!(
+            "{}package.json 无 build 脚本——请加上 `\"build\": \"{cmd} && vite build\"`",
+            style::warn("提示：")
+        ));
         return Ok(());
     };
     if build.contains(DTS_TSCONFIG) {
@@ -48,9 +64,12 @@ pub(crate) fn fix_component_decl_pipeline(root: &Path) -> Result<()> {
     match replace_json_string_value(&text, "build", &format!("{cmd} && {build}")) {
         Some(next) => {
             fs::write(&pkg_json, next).with_context(|| format!("写入失败: {}", pkg_json.display()))?;
-            println!("已在 package.json 的 build 脚本前置 `{cmd} &&`");
+            style::out(format!("{} `{cmd} &&`", style::ok("已在 package.json 的 build 脚本前置")));
         }
-        None => println!("提示：package.json 的 build 脚本未改动，请自行前置 `{cmd} &&`"),
+        None => style::out(format!(
+            "{}package.json 的 build 脚本未改动，请自行前置 `{cmd} &&`",
+            style::warn("提示：")
+        )),
     }
     Ok(())
 }

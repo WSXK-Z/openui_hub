@@ -14,6 +14,7 @@ use crate::config::{
     PKG_CONFIG,
 };
 use crate::cred::{resolve_publish_token, resolve_registry};
+use crate::style;
 
 #[derive(Deserialize)]
 pub(crate) struct PkgManifest {
@@ -94,10 +95,19 @@ pub(crate) async fn upload_pkg(pkg_root: &Path, registry: &str, token: &str, all
         .unwrap_or_else(|_| json!({ "error": "无法解析响应" }));
     if status.is_success() {
         let manifest_url = body["manifestUrl"].as_str().unwrap_or("-");
-        println!("published {}@{} -> {manifest_url}", m.name, m.version);
+        style::out(format!(
+            "{} {} -> {}",
+            style::ok("published"),
+            style::strong(format!("{}@{}", m.name, m.version)),
+            style::muted(manifest_url)
+        ));
         Ok(())
     } else if allow_exists && status == reqwest::StatusCode::CONFLICT {
-        println!("skipped {}@{}", m.name, m.version);
+        style::out(format!(
+            "{} {}",
+            style::warn("skipped"),
+            style::strong(format!("{}@{}", m.name, m.version))
+        ));
         Ok(())
     } else {
         let msg = body["error"].as_str().unwrap_or("unknown error");
@@ -167,7 +177,13 @@ pub(crate) async fn cmd_publish(dir_flag: Option<&str>, registry: &Option<String
                     .ok_or_else(|| anyhow!("{} 缺少发布令牌：请用 --token、OUI_TOKEN 或 `oui hub add --registry {reg}`", c.name))?;
                 let pkg_root = component_pkg_dir(&fallback, c);
                 let abs = if pkg_root.is_absolute() { pkg_root } else { root.join(&pkg_root) };
-                println!("[oui] 发布组件 {}@{} → {}（{}）", c.name, c.version, reg, abs.display());
+                style::out(format!(
+                    "{} 发布组件 {} → {}（{}）",
+                    style::accent("[oui]"),
+                    style::strong(format!("{}@{}", c.name, c.version)),
+                    style::accent(&reg),
+                    style::muted(abs.display())
+                ));
                 upload_pkg(&abs, &reg, &tk, true).await?;
             }
             Ok(())

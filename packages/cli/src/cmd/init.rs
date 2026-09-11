@@ -10,6 +10,7 @@ use crate::config::{
     merged_defaults_value, project_root, read_defaults, read_json, read_package_json, write_pkg_config,
     InitOut, PkgConfigFile, LOCK_FILE, PKG_CONFIG,
 };
+use crate::style;
 use crate::types::{configure_types, has_remote_types, report_types};
 use crate::vscode::fix_vscode_settings;
 
@@ -117,7 +118,7 @@ pub(crate) fn init_wizard(args: InitArgs, path: &std::path::Path, existing: Opti
         if matches!(v.as_str(), "vanilla" | "atomic-unocss" | "atomic-var") {
             break v;
         }
-        eprintln!("cssStrategy 只能是 vanilla | atomic-unocss | atomic-var");
+        style::eout(style::error("cssStrategy 只能是 vanilla | atomic-unocss | atomic-var"));
     };
     // 3. outDir
     let out_default = cur_out.clone().unwrap_or_else(|| "pkg".to_string());
@@ -128,7 +129,12 @@ pub(crate) fn init_wizard(args: InitArgs, path: &std::path::Path, existing: Opti
     let lock_default = cur_lock.clone().unwrap_or_else(|| LOCK_FILE.to_string());
     let lock_file = prompt_default("lock file", &lock_default)?;
     // 组件登记不在此处：用 `oui register <@scope/name>`（发布侧）与 `oui use <@scope/name>`（使用侧）
-    println!("提示：登记待发布组件用 `oui register <@scope/name>`；使用他人组件用 `oui use <@scope/name>`");
+    style::out(format!(
+        "{}登记待发布组件用 {}；使用他人组件用 {}",
+        style::strong("提示："),
+        style::accent("`oui register <@scope/name>`"),
+        style::accent("`oui use <@scope/name>`")
+    ));
     let peer = ex.and_then(|c| c.peer.clone()).unwrap_or_default();
     let out = InitOut {
         kind,
@@ -143,11 +149,11 @@ pub(crate) fn init_wizard(args: InitArgs, path: &std::path::Path, existing: Opti
     let targets = init_targets(path, &out)?;
     if !args.yes && targets.iter().any(|(file, _)| file.is_file()) {
         for (file, value) in &targets {
-            println!("将写入 {}", file.display());
-            println!("{}", serde_json::to_string_pretty(value)?);
+            style::out(format!("{} {}", style::strong("将写入"), style::muted(file.display())));
+            style::out(serde_json::to_string_pretty(value)?);
         }
         if !prompt_yes("确认覆盖以上配置？", true)? {
-            println!("已取消，未修改 {}", path.display());
+            style::out(format!("{}，未修改 {}", style::warn("已取消"), style::muted(path.display())));
             return Ok(());
         }
     }
@@ -159,7 +165,11 @@ pub(crate) fn init_wizard(args: InitArgs, path: &std::path::Path, existing: Opti
         true
     } else if has_remote_types(root) {
         let where_ = if root.join("env.d.ts").is_file() { root.join("env.d.ts") } else { root.join("tsconfig.json") };
-        println!("{} 已接入远程组件类型", where_.display());
+        style::out(format!(
+            "{} {}",
+            style::muted(where_.display()),
+            style::ok("已接入远程组件类型")
+        ));
         false
     } else {
         prompt_yes("接入远程组件类型（建 oui.d.ts 并登记进 tsconfig）？", false)?
