@@ -1,6 +1,5 @@
 {
   "$schema": "node_modules/@openui_hub/cli/oui.schema.json",
   "cssStrategy": "vanilla",
-  "type": "vue-component",
-  "uno": true
+  "type": "vue-component"
 }

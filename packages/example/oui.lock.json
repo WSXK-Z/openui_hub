@@ -1,18 +1,13 @@
 {
   "$schema": "node_modules/@openui_hub/cli/oui.lock.schema.json",
   "packages": {
-    "@openui_hub/button": {
-      "default": "0.1.4",
+    "@test/button": {
+      "default": "0.1.0",
       "versions": {
-        "0.1.4": {
+        "0.1.0": {
           "registry": "http://127.0.0.1:8787"
-        }
-      }
-    },
-    "@oui/button": {
-      "default": "0.1.4",
-      "versions": {
-        "0.1.4": {
+        },
+        "0.1.1": {
           "registry": "http://127.0.0.1:8787"
         }
       }
