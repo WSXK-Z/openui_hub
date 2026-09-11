@@ -39,9 +39,9 @@ enum Cmd {
         #[arg(long)]
         token: Option<String>,
     },
-    /// 解析并锁定组件版本，写入 oui.lock.json（oui.json 的 lockFile 可改名）
+    /// 解析并锁定组件版本，写入 oui.lock.json（每包可锁多个版本）
     Use {
-        /// 包名，形如 @scope/name 或 @scope/name@version
+        /// 包名，形如 @scope/name 或 @scope/name@version（给了版本则锁定该版本，否则锁定 latest）
         pkg: String,
         #[arg(long)]
         registry: Option<String>,
@@ -51,6 +51,9 @@ enum Cmd {
         /// 额外接入远程组件类型：在工程根建 oui.d.ts 并登记进 tsconfig（等同 init 的类型选项）
         #[arg(long)]
         with_types: bool,
+        /// 把本次锁定的版本设为默认（不带版本号的导入指向它）
+        #[arg(long = "default")]
+        make_default: bool,
     },
     /// 列出 hub 上的包
     List {
@@ -128,7 +131,7 @@ enum Cmd {
         #[arg(long)]
         no_input: bool,
     },
-    /// 修复工程：重建缺失的本地类型声明（oui-types/）、对齐 tsconfig/d.ts 类型接入，
+    /// 修复工程：重建缺失的声明缓存（node_modules/.hub-cache/types）、对齐 tsconfig/d.ts 类型接入，
     /// 并把 oui 相关文件折叠进工程配置（VS Code file nesting）
     Fix {
         /// hub 地址（flag > env OUI_REGISTRY > 凭据默认连接 > 默认）
@@ -257,8 +260,8 @@ async fn run() -> Result<()> {
         Cmd::Publish { dir, registry, token } => {
             cmd::publish::cmd_publish(dir.as_deref(), &registry, &token).await
         }
-        Cmd::Use { pkg, registry, mode, with_types } => {
-            cmd::consume::cmd_use(&pkg, &registry, &mode, with_types).await
+        Cmd::Use { pkg, registry, mode, with_types, make_default } => {
+            cmd::consume::cmd_use(&pkg, &registry, &mode, with_types, make_default).await
         }
         Cmd::List { registry } => cmd::list::cmd_list(&registry).await,
         Cmd::Fix { registry } => cmd::fix::cmd_fix(&registry).await,

@@ -8,14 +8,17 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, Context, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+
+use crate::style;
 
 /// 使用依赖锁定的文件名（组件使用者）。
 pub(crate) const LOCK_FILE: &str = "oui.lock.json";
-/// 消费端本地类型目录（工程根下）：`<pkg>/index.d.ts` 转发 `<pkg>/<version>/**` 的声明文件。
+/// 远程组件声明缓存（工程根下）：`<pkg>/index.d.ts` 转发 `<pkg>/<version>/**` 的声明文件。
+/// 与构建期模块缓存同根（`node_modules/.hub-cache`），工程目录因此不产生额外文件、无需忽略配置；
 /// 映射值不随版本变化，故 tsconfig 的 paths 只需插入、无需改写（用户 tsconfig 里的 JSONC 原样保留）。
-pub(crate) const TYPES_DIR: &str = "oui-types";
+pub(crate) const TYPES_DIR: &str = "node_modules/.hub-cache/types";
 /// 组件工程产出类型声明的独立 tsconfig（只出 .d.ts，JS 由 vite 负责）。
 pub(crate) const DTS_TSCONFIG: &str = "tsconfig.dts.json";
 
@@ -27,6 +30,26 @@ pub(crate) const PKG_SCHEMA: &str = "node_modules/@openui_hub/cli/oui.schema.jso
 pub(crate) const COMPONENTS_SCHEMA: &str = "node_modules/@openui_hub/cli/oui.components.schema.json";
 pub(crate) const LOCK_SCHEMA: &str = "node_modules/@openui_hub/cli/oui.lock.schema.json";
 pub(crate) const DEFAULT_REGISTRY: &str = "http://127.0.0.1:8787";
+
+/// 本 CLI 提供的 schema 文件名。
+const OWN_SCHEMAS: [&str; 3] = ["oui.schema.json", "oui.components.schema.json", "oui.lock.schema.json"];
+
+/// 既有 `$schema` 是否指向本 CLI 的某个 schema 文件（含 `../../node_modules/…` 等旧相对路径）。
+fn is_own_schema(v: &str) -> bool {
+    OWN_SCHEMAS.contains(&v.rsplit(['/', '\\']).next().unwrap_or(v))
+}
+
+/// `$schema` 需改写时的新值：缺失或指向本 CLI 的其它 schema（含旧相对路径）→ 当前路径；
+/// 已是当前值、指向远程/自定义 schema → 不改。
+fn schema_patch(current: Option<&str>, canonical: &str) -> Option<String> {
+    match current {
+        None => Some(canonical.to_string()),
+        Some(c) if c == canonical => None,
+        Some(c) if c.starts_with("http://") || c.starts_with("https://") => None,
+        Some(c) if is_own_schema(c) => Some(canonical.to_string()),
+        Some(_) => None,
+    }
+}
 
 /// `oui.json`：CLI 在当前目录的配置与公共默认值。
 #[derive(Deserialize, Default)]
@@ -168,7 +191,9 @@ pub(crate) struct InitOut {
 pub(crate) fn merged_defaults_value(path: &Path, o: &InitOut) -> Result<Value> {
     let mut doc = read_json_object(path)?;
     let obj = doc.as_object_mut().unwrap();
-    obj.entry("$schema".to_string()).or_insert_with(|| json!(PKG_SCHEMA));
+    if let Some(s) = schema_patch(obj.get("$schema").and_then(Value::as_str), PKG_SCHEMA) {
+        obj.insert("$schema".into(), json!(s));
+    }
 
     obj.insert("type".into(), json!(o.kind));
     obj.insert("cssStrategy".into(), json!(o.css_strategy));
@@ -202,11 +227,19 @@ pub(crate) fn write_pkg_config(path: &Path, o: &InitOut) -> Result<()> {
     let doc = merged_defaults_value(path, o)?;
     fs::write(path, format!("{}\n", serde_json::to_string_pretty(&doc)?))
         .with_context(|| format!("写入失败: {}", path.display()))?;
-    println!("已写入 {}", path.display());
+    style::out(format!("{} {}", style::ok("已写入"), style::muted(path.display())));
     if read_components(path.parent().unwrap_or(path)).is_empty() {
-        println!("尚未登记组件：用 oui register <@scope/name> --version x.y.z --entry src/… 登记");
+        style::out(format!(
+            "{}用 {} 登记",
+            style::strong("尚未登记组件："),
+            style::accent("oui register <@scope/name> --version x.y.z --entry src/…")
+        ));
     } else {
-        println!("下一步：vite build → oui publish");
+        style::out(format!(
+            "{}vite build → {}",
+            style::strong("下一步："),
+            style::accent("oui publish")
+        ));
     }
     Ok(())
 }
@@ -244,7 +277,9 @@ pub(crate) fn upsert_component(root: &Path, name: &str, patch: serde_json::Map<S
     let obj = doc
         .as_object_mut()
         .ok_or_else(|| anyhow!("{} 顶层应为 JSON 对象", path.display()))?;
-    obj.entry("$schema".to_string()).or_insert_with(|| json!(COMPONENTS_SCHEMA));
+    if let Some(s) = schema_patch(obj.get("$schema").and_then(Value::as_str), COMPONENTS_SCHEMA) {
+        obj.insert("$schema".into(), json!(s));
+    }
     let arr = obj
         .entry("components".to_string())
         .or_insert_with(|| json!([]))
@@ -293,13 +328,67 @@ pub(crate) fn project_root(from: &Path) -> (PathBuf, Option<PkgConfigFile>) {
     (pkg_fallback.unwrap_or_else(|| from.to_path_buf()), None)
 }
 
-/// 读工程根的 lock（文件名取 oui.json 的 lockFile，缺省 oui.lock.json）。
-pub(crate) fn read_lock_at(root: &Path) -> Value {
-    let name = read_defaults(root)
-        .and_then(|c| c.lock_file)
-        .unwrap_or_else(|| LOCK_FILE.to_string());
-    fs::read(root.join(name))
-        .ok()
-        .and_then(|b| serde_json::from_slice(&b).ok())
-        .unwrap_or_else(|| json!({}))
+/// `oui.lock.json`：使用依赖锁定。每个包可锁多个版本，`default` 是不带版本号的导入
+/// （`oui-hub:@scope/name`）解析到的版本；每条版本只记来源 hub 地址，产物路径/样式/类型
+/// 由该版本的 manifest 决定。
+#[derive(Deserialize, Serialize, Default)]
+pub(crate) struct LockFile {
+    #[serde(rename = "$schema", default, skip_serializing_if = "Option::is_none")]
+    schema: Option<String>,
+    #[serde(default)]
+    pub(crate) packages: BTreeMap<String, LockPackage>,
+}
+
+#[derive(Deserialize, Serialize, Default)]
+pub(crate) struct LockPackage {
+    /// 不带版本号的导入解析到的版本
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) default: Option<String>,
+    #[serde(default)]
+    pub(crate) versions: BTreeMap<String, LockVersion>,
+}
+
+#[derive(Deserialize, Serialize, Default)]
+pub(crate) struct LockVersion {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) registry: Option<String>,
+}
+
+impl LockFile {
+    /// 读工程根的 lock（文件名取 oui.json 的 lockFile，缺省 oui.lock.json；缺失/畸形 → 空）。
+    pub(crate) fn read(root: &Path) -> LockFile {
+        fs::read(root.join(lock_file_name(root)))
+            .ok()
+            .and_then(|b| serde_json::from_slice(&b).ok())
+            .unwrap_or_default()
+    }
+
+    /// 写回 lock（`$schema` 缺失或指向本 CLI 的其它 schema 时写当前路径），返回写入的文件路径。
+    pub(crate) fn write(&mut self, root: &Path) -> Result<PathBuf> {
+        let path = root.join(lock_file_name(root));
+        if let Some(s) = schema_patch(self.schema.as_deref(), LOCK_SCHEMA) {
+            self.schema = Some(s);
+        }
+        fs::write(&path, format!("{}\n", serde_json::to_string_pretty(&*self)?))
+            .with_context(|| format!("写入失败: {}", path.display()))?;
+        Ok(path)
+    }
+
+    /// 已锁定的 (包名, 版本, hub 地址) 清单（按包名/版本排序）。
+    pub(crate) fn entries(&self) -> Vec<(&str, &str, Option<&str>)> {
+        let mut out = Vec::new();
+        for (name, pkg) in &self.packages {
+            for (version, v) in &pkg.versions {
+                out.push((name.as_str(), version.as_str(), v.registry.as_deref()));
+            }
+        }
+        out
+    }
+}
+
+/// lock 文件名（oui.json 的 lockFile，缺省 `oui.lock.json`）。
+pub(crate) fn lock_file_name(root: &Path) -> String {
+    read_defaults(root)
+        .map(|c| c.lock_file_name())
+        .unwrap_or_else(|| LOCK_FILE.to_string())
 }

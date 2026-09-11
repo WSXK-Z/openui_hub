@@ -157,8 +157,6 @@ packages/registry/.oui-hub/
 **/node_modules/.hub-cache/
 # 凭据在 ~/.oui/credentials.json（仓库内文件不含密钥，可提交）
 packages/example/dist/
-# 消费端本地类型镜像（oui use / oui fix 按 oui.lock.json 重建）
-packages/example/oui-types/
 
 # ---> 本地机密与临时产物
 # .npmrc 含私有源 _authToken，仅保留在本地，勿提交

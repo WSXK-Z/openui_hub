@@ -2,7 +2,7 @@
  * 工程配置文件（同一目录下三份，各司其职）：
  * - `oui.json`：CLI 在当前目录的配置与公共默认值（type / cssStrategy / outDir / uno / peer / lockFile）；
  * - `oui.components.json`：纳入 hub 的组件清单（组件开发者），每个组件记录发布到的 hub 地址；
- * - `oui.lock.json`：使用依赖锁定（组件使用者），每个包记录固定版本与来源 hub 地址。
+ * - `oui.lock.json`：使用依赖锁定（组件使用者），每个包记 `default` 版本与各已锁定版本及来源 hub 地址。
  */
 
 import { existsSync, readFileSync } from 'node:fs'

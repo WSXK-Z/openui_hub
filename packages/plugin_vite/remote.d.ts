@@ -1,5 +1,5 @@
 /**
- * `oui-hub:<@scope/name>` 虚拟模块的类型声明（shorthand ambient module）。
+ * `oui-hub:<@scope/name>[@<version>]` 虚拟模块的类型声明（shorthand ambient module）。
  *
  * 远程组件由 hubVite 在构建期解析（虚拟模块），TypeScript 无从推断，故提供通配声明：
  * 该前缀下的所有模块导入项按 any 处理。使用方在 tsconfig 中启用即可，无需生成文件：
@@ -9,6 +9,8 @@
  * ```
  *
  * 需要精确类型时改用 `oui use <pkg> --mode source`（本地源码），
- * 或 `oui use <pkg> --with-types` 生成项目内声明文件。
+ * 或 `oui use <pkg> --with-types`：把该版本的声明下载到 `node_modules/.hub-cache/types/<pkg>/<version>/`
+ * 并自动接好 tsconfig `paths` 映射（`oui-hub:<pkg>` → `default` 版本、
+ * `oui-hub:<pkg>@<version>` → 该版本缓存入口）。
  */
 declare module 'oui-hub:*'

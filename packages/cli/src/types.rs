@@ -1,5 +1,5 @@
-//! 远程组件类型接入：`oui.d.ts` / tsconfig 登记与 paths 映射，以及本地类型声明
-//! （`oui-types/`）的落盘与重建。
+//! 远程组件类型接入：`oui.d.ts` / tsconfig 登记与 paths 映射，以及声明文件在
+//! `node_modules/.hub-cache/types` 的落盘与重建。
 
 use std::{
     collections::BTreeMap,
@@ -10,32 +10,34 @@ use std::{
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 
-use crate::config::{read_lock_at, TYPES_DIR};
+use crate::config::{LockFile, TYPES_DIR};
 use crate::decl::has_vue_files;
+use crate::style;
 use crate::text::{find_key, insert_into_array, insert_into_object, skip_ws, write_if_changed};
 
-/// 重建缺失的本地类型声明：lock 内每个包若本地入口或对应版本目录缺失，按锁定版本取 manifest
-/// （`/v/<name>@<version>/manifest.json`，与 latest 无关）重新下载声明并重建转发入口；
+/// 重建缺失的声明缓存：lock 内每个 (包, 版本) 若版本转发入口缺失，按该版本取 manifest
+/// （`/v/<name>@<version>/manifest.json`）重新下载声明并重建入口；
 /// 该版本未提供类型声明则跳过。失败只提示（该包退化为 any），不影响其它修复项。
-pub(crate) async fn repair_local_types(root: &Path, lock: &Value, fallback_registry: &str) {
-    let Some(pkgs) = lock.get("packages").and_then(Value::as_object) else {
+pub(crate) async fn repair_type_cache(root: &Path, lock: &LockFile, fallback_registry: &str) {
+    let entries: Vec<(String, String, String)> = lock
+        .entries()
+        .into_iter()
+        .map(|(name, version, registry)| {
+            let reg = registry
+                .map(|s| s.trim_end_matches('/').to_string())
+                .unwrap_or_else(|| fallback_registry.to_string());
+            (name.to_string(), version.to_string(), reg)
+        })
+        .collect();
+    if entries.is_empty() {
         return;
-    };
+    }
     let client = reqwest::Client::new();
-    for (name, v) in pkgs {
-        let version = v.get("version").and_then(Value::as_str).unwrap_or_default();
-        if version.is_empty() {
+    for (name, version, registry) in &entries {
+        let entry = format!("{TYPES_DIR}/{name}/{version}/index.d.ts");
+        if root.join(&entry).is_file() {
             continue;
         }
-        let entry = format!("{TYPES_DIR}/{name}/index.d.ts");
-        if root.join(&entry).is_file() && root.join(TYPES_DIR).join(name).join(version).is_dir() {
-            continue;
-        }
-        let registry = v
-            .get("registry")
-            .and_then(Value::as_str)
-            .map(|s| s.trim_end_matches('/').to_string())
-            .unwrap_or_else(|| fallback_registry.to_string());
         let url = format!("{registry}/v/{name}@{version}/manifest.json");
         let rebuilt = async {
             let resp = client
@@ -55,16 +57,23 @@ pub(crate) async fn repair_local_types(root: &Path, lock: &Value, fallback_regis
                 .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
                 .unwrap_or_default();
             let local =
-                fetch_pkg_types(&client, &registry, name, version, entry_rel, &files, root).await?;
+                fetch_pkg_types(&client, registry, name, version, entry_rel, &files, root).await?;
             Ok::<_, anyhow::Error>(Some(local))
         }
         .await;
         match rebuilt {
-            Ok(Some(files)) => {
-                println!("已重建 {name}@{version} 的本地类型声明（{} 个文件）→ {entry}", files.len())
-            }
-            Ok(None) => println!("{name}@{version} 未提供类型声明（按 any 处理）"),
-            Err(e) => println!("类型声明重建失败：{e}"),
+            Ok(Some(files)) => style::out(format!(
+                "{} {} 的声明缓存（{} 个文件）→ {}",
+                style::ok("已重建"),
+                style::strong(format!("{name}@{version}")),
+                files.len(),
+                style::muted(&entry)
+            )),
+            Ok(None) => style::out(format!(
+                "{} 未提供类型声明（按 any 处理）",
+                style::strong(format!("{name}@{version}"))
+            )),
+            Err(e) => style::out(style::warn(format!("类型声明重建失败：{e}"))),
         }
     }
 }
@@ -132,16 +141,24 @@ pub(crate) fn source_project_covering_src(root: &Path) -> Option<PathBuf> {
     None
 }
 
-/// lock 中已落盘本地类型的包 → tsconfig paths 映射：`oui-hub:<name>` → `./oui-types/<name>/index`。
-/// 声明入口固定为 `oui-types/<name>/index.d.ts`（不随版本变化），故插入后无需再改写。
-pub(crate) fn type_paths_of(root: &Path, lock: &Value) -> BTreeMap<String, String> {
+/// lock 中已缓存声明的目标 → tsconfig paths 映射：
+/// - `oui-hub:<name>` → `./<缓存>/<name>/index`（包级入口，转发 `default` 版本）；
+/// - `oui-hub:<name>@<version>` → `./<缓存>/<name>/<version>/index`（指定版本）。
+///
+/// 入口文件与版本无关（固定在包/版本目录下），故插入后无需再改写。
+pub(crate) fn type_paths_of(root: &Path, lock: &LockFile) -> BTreeMap<String, String> {
     let mut out = BTreeMap::new();
-    let Some(pkgs) = lock.get("packages").and_then(Value::as_object) else {
-        return out;
-    };
-    for name in pkgs.keys() {
-        if root.join(TYPES_DIR).join(name).join("index.d.ts").is_file() {
-            out.insert(format!("oui-hub:{name}"), format!("./{TYPES_DIR}/{name}/index"));
+    for (name, pkg) in &lock.packages {
+        let base = format!("{TYPES_DIR}/{name}");
+        if let Some(version) = &pkg.default
+            && root.join(&base).join(version).join("index.d.ts").is_file()
+        {
+            out.insert(format!("oui-hub:{name}"), format!("./{base}/index"));
+        }
+        for version in pkg.versions.keys() {
+            if root.join(&base).join(version).join("index.d.ts").is_file() {
+                out.insert(format!("oui-hub:{name}@{version}"), format!("./{base}/{version}/index"));
+            }
         }
     }
     out
@@ -255,9 +272,8 @@ pub(crate) fn declares_default_export(text: &str) -> bool {
         })
 }
 
-/// 下载某包全部声明文件到 `<root>/oui-types/<name>/<version>/`，并生成转发入口
-/// `<root>/oui-types/<name>/index.d.ts`（入口里对同目录声明的相对引用保持可解析）。
-/// 拉取成功后落盘到本地类型目录，并重建转发入口。
+/// 下载某包某版本的声明：文件树写到 `<缓存>/<name>/<version>/types/…`（保持 manifest 的相对布局），
+/// 并生成版本级转发入口 `<缓存>/<name>/<version>/index.d.ts`（入口里对同目录声明的相对引用保持可解析）。
 pub(crate) async fn fetch_pkg_types(
     client: &reqwest::Client,
     reg: &str,
@@ -268,17 +284,13 @@ pub(crate) async fn fetch_pkg_types(
     root: &Path,
 ) -> Result<Vec<String>> {
     const PREFIX: &str = "types/";
-    let pkg_dir = root.join(TYPES_DIR).join(base);
-    let ver_dir = pkg_dir.join(version);
-    // 清掉其它版本残留（index.d.ts 只转发当前版本）
-    if pkg_dir.is_dir() {
-        for ent in fs::read_dir(&pkg_dir)?.flatten() {
-            let p = ent.path();
-            if p.is_dir() && ent.file_name().to_string_lossy() != version {
-                let _ = fs::remove_dir_all(&p);
-            }
-        }
+    let ver_dir = root.join(TYPES_DIR).join(base).join(version);
+    // 该版本整棵重建（声明树 + 转发入口），其它版本目录不动
+    if ver_dir.is_dir() {
+        fs::remove_dir_all(&ver_dir)
+            .with_context(|| format!("清理失败: {}", ver_dir.display()))?;
     }
+    let tree = ver_dir.join("types");
     let mut local: Vec<String> = Vec::new();
     for rel in files {
         let sub = rel
@@ -293,12 +305,12 @@ pub(crate) async fn fetch_pkg_types(
         if !resp.status().is_success() {
             bail!("{url} → HTTP {}", resp.status());
         }
-        let dst = ver_dir.join(sub);
+        let dst = tree.join(sub);
         if let Some(p) = dst.parent() {
             fs::create_dir_all(p).with_context(|| format!("创建目录失败: {}", p.display()))?;
         }
         fs::write(&dst, resp.bytes().await?).with_context(|| format!("写入失败: {}", dst.display()))?;
-        local.push(format!("{TYPES_DIR}/{base}/{version}/{sub}"));
+        local.push(format!("{TYPES_DIR}/{base}/{version}/types/{sub}"));
     }
 
     let entry_sub = entry
@@ -308,17 +320,86 @@ pub(crate) async fn fetch_pkg_types(
         .strip_suffix(".d.ts")
         .or_else(|| entry_sub.strip_suffix(".d.mts"))
         .unwrap_or(entry_sub);
-    let has_default = fs::read_to_string(ver_dir.join(entry_sub))
+    let has_default = fs::read_to_string(tree.join(entry_sub))
         .map(|t| declares_default_export(&t))
         .unwrap_or(false);
-    let mut content = String::from("/* 由 oui 生成（oui use / oui fix），请勿手改。 */\n");
-    content.push_str(&format!("export * from './{version}/{entry_spec}';\n"));
-    if has_default {
-        content.push_str(&format!("export {{ default }} from './{version}/{entry_spec}';\n"));
-    }
-    let index = pkg_dir.join("index.d.ts");
-    fs::write(&index, content).with_context(|| format!("写入失败: {}", index.display()))?;
+    let index = ver_dir.join("index.d.ts");
+    fs::write(&index, entry_shim(&format!("types/{entry_spec}"), has_default))
+        .with_context(|| format!("写入失败: {}", index.display()))?;
     Ok(local)
+}
+
+/// 按 lock 同步声明缓存的入口：
+/// - 每个锁定版本必须有版本级入口（缺失 → 返回该 (包, 版本)，交由 `oui fix` 重拉）；
+/// - 包级入口 `<name>/index.d.ts` 按 `default` 重建；
+/// - 清理 lock 中已不存在的包/版本目录。
+pub(crate) fn sync_type_shims(root: &Path, lock: &LockFile) -> Result<Vec<(String, String)>> {
+    let mut missing: Vec<(String, String)> = Vec::new();
+    let cache = root.join(TYPES_DIR);
+    for (name, pkg) in &lock.packages {
+        let pkg_dir = cache.join(name);
+        for version in pkg.versions.keys() {
+            let index = pkg_dir.join(version).join("index.d.ts");
+            if !index.is_file() {
+                missing.push((name.clone(), version.clone()));
+            }
+        }
+        // 包级入口：转发 default 版本（无 default 或该版本未缓存 → 不写）
+        let default = pkg
+            .default
+            .as_ref()
+            .filter(|v| pkg_dir.join(v).join("index.d.ts").is_file());
+        let pkg_index = pkg_dir.join("index.d.ts");
+        match default {
+            Some(version) => {
+                let content = entry_shim(&format!("{version}/index"), true);
+                write_if_changed(&pkg_index, &content)
+                    .map_err(|()| anyhow!("写入失败: {}", pkg_index.display()))?;
+            }
+            None => {
+                let _ = fs::remove_file(&pkg_index);
+            }
+        }
+        // 清理：包目录下已不在 lock 里的版本目录
+        if pkg_dir.is_dir() {
+            for ent in fs::read_dir(&pkg_dir)?.flatten() {
+                let path = ent.path();
+                let version = ent.file_name().to_string_lossy().to_string();
+                if path.is_dir() && !pkg.versions.contains_key(version.as_str()) {
+                    let _ = fs::remove_dir_all(&path);
+                }
+            }
+        }
+    }
+    // 清理：缓存里已不在 lock 里的包目录（缓存布局为 <scope>/<name>/<version>）
+    if cache.is_dir() {
+        for scope in fs::read_dir(&cache)?.flatten() {
+            if !scope.path().is_dir() {
+                continue;
+            }
+            let scope_name = scope.file_name().to_string_lossy().to_string();
+            for pkg in fs::read_dir(scope.path())?.flatten() {
+                if !pkg.path().is_dir() {
+                    continue;
+                }
+                let name = format!("{scope_name}/{}", pkg.file_name().to_string_lossy());
+                if !lock.packages.contains_key(&name) {
+                    let _ = fs::remove_dir_all(pkg.path());
+                }
+            }
+        }
+    }
+    Ok(missing)
+}
+
+/// 转发入口内容：把包/版本目录下的声明入口再导出（`export *` 不转 default，故按需补一行）。
+fn entry_shim(target: &str, has_default: bool) -> String {
+    let mut content = String::from("/* 由 oui 生成（oui use / oui fix），请勿手改。 */\n");
+    content.push_str(&format!("export * from './{target}';\n"));
+    if has_default {
+        content.push_str(&format!("export {{ default }} from './{target}';\n"));
+    }
+    content
 }
 
 /// 生成/修复类型接入文件（4 步）：
@@ -328,7 +409,7 @@ pub(crate) async fn fetch_pkg_types(
 /// 4) 有但非 references → 把 `oui.d.ts` 登记进 include（无 include 试 files；都没有则 TS 默认包含根目录）。
 ///
 /// 5) 有类型的包 → 在「包含源码」的那个 tsconfig 里插 `compilerOptions.paths` 映射
-///    （`oui-hub:<name>` → `./oui-types/<name>/index.d.ts`，由 `oui use` 落盘）。
+///    （`oui-hub:<name>` → `node_modules/.hub-cache/types/<name>/index.d.ts`，由 `oui use` / `oui fix` 落盘）。
 ///
 /// 注意：project references 之间只共享"声明产物"，被引用工程里只放 `.d.ts` 传不到引用方；
 /// 且 solution-style 下若没有工程包含 `src/`，源码文件会落进编辑器的 inferred project 而看不到声明。
@@ -337,8 +418,8 @@ pub(crate) fn configure_types(root: &Path) -> TypesEdit {
     let dts = root.join(TYPES_FILE);
     let main = root.join(MAIN_TSCONFIG);
     let ref_cfg = root.join(REF_TSCONFIG);
-    // 已落盘本地类型的包 → paths 映射（值指向 oui-types/<pkg>/index.d.ts，不随版本变化）
-    let paths = type_paths_of(root, &read_lock_at(root));
+    // 已缓存声明的包/版本 → paths 映射（值指向缓存入口，不随版本变化）
+    let paths = type_paths_of(root, &LockFile::read(root));
     let mut written: Vec<PathBuf> = Vec::new();
     match write_if_changed(&dts, &types_file_content()) {
         Ok(true) => written.push(dts.clone()),
@@ -383,7 +464,11 @@ pub(crate) fn configure_types(root: &Path) -> TypesEdit {
             Err(()) => return TypesEdit::Manual(ref_cfg),
         }
         if with_sources && has_vue_files(&root.join("src"), 0) {
-            println!("提示：工程含 .vue，类型检查请用 `vue-tsc -p {REF_TSCONFIG}`");
+            style::out(format!(
+                "{}工程含 .vue，类型检查请用 {}",
+                style::warn("提示："),
+                style::accent(format!("`vue-tsc -p {REF_TSCONFIG}`"))
+            ));
         }
 
         // (c) 若已有独立源码工程（如 create-vue 的 tsconfig.app.json）→ oui.d.ts 与 paths 都登记进它
@@ -437,7 +522,7 @@ pub(crate) fn configure_types(root: &Path) -> TypesEdit {
         text = next;
     }
 
-    // 路径映射：有类型的包 → 本地 oui-types/<pkg>/index.d.ts（用户 tsconfig 只插不改）
+    // 路径映射：有类型的包 → 声明缓存（用户 tsconfig 只插不改）
     if let Some(next) = merge_paths(&text, &paths) {
         if fs::write(&main, next).is_err() {
             return TypesEdit::Manual(main);
@@ -459,11 +544,13 @@ pub(crate) fn report_types(edit: &TypesEdit) {
     match edit {
         TypesEdit::Written(files) => {
             let list: Vec<String> = files.iter().map(|p| p.display().to_string()).collect();
-            println!("{}", list.join(","));
+            style::out(format!("{} {}", style::ok("已接入类型"), style::muted(list.join(","))));
         }
-        TypesEdit::Already(p) => println!("类型接入已就绪: {}", p.display()),
+        TypesEdit::Already(p) => {
+            style::out(format!("{}：{}", style::ok("类型接入已就绪"), style::muted(p.display())))
+        }
         TypesEdit::Manual(p) => {
-            println!("需手动配置类型接入: {}", p.display());
+            style::out(style::warn(format!("需手动配置类型接入：{}", p.display())));
         }
     }
 }

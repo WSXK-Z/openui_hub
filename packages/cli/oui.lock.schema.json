@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "$id": "https://raw.githubusercontent.com/WSXK-Z/openui_hub/main/packages/cli/oui.lock.schema.json",
-    "$comment": "oui.lock.json：使用依赖锁定（组件使用者），由 `oui use` 写入；每项只记录固定版本与来源 hub 地址，产物路径/样式/类型由该版本的 manifest 决定。",
+    "$comment": "oui.lock.json：使用依赖锁定（组件使用者），由 `oui use` 写入；每个包记录一个 default 版本与若干已锁定版本，仅记来源 hub 地址，产物路径/样式/类型由该版本的 manifest 决定。",
     "type": "object",
     "additionalProperties": true,
     "properties": {
@@ -11,24 +11,37 @@
         "packages": {
             "type": "object",
             "additionalProperties": {
-                "$ref": "#/definitions/entry"
+                "$ref": "#/definitions/package"
             }
         }
     },
     "definitions": {
-        "entry": {
+        "package": {
             "type": "object",
             "additionalProperties": false,
             "required": [
-                "version"
+                "versions"
             ],
             "properties": {
-                "version": {
-                    "type": "string"
+                "default": {
+                    "type": "string",
+                    "description": "不带版本号的导入（oui-hub:<name>）指向的版本。"
                 },
+                "versions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/version"
+                    }
+                }
+            }
+        },
+        "version": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
                 "registry": {
                     "type": "string",
-                    "description": "该包来源 hub 地址；产物 URL = <registry>/v/<name>@<version>/…。"
+                    "description": "该版本来源 hub 地址；产物 URL = <registry>/v/<name>@<version>/…。"
                 }
             }
         }

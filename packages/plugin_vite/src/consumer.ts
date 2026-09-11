@@ -9,10 +9,10 @@
  * 代码内：`import { Button } from 'oui-hub:@oui/button'`
  *
  * 机制：
- * - `oui-hub:<name>` 虚拟导入 → 读 `<root>/oui.lock.json`（或 `oui.json` 的 lockFile）→
- *   按条目自带的 hub 地址取该版本 manifest（决定 module/css 相对路径）→ fetch 远程预编译 ESM
- *   （磁盘缓存 node_modules/.hub-cache/，内容寻址 key）→ 注入远程 css；
- *   虚拟导入 → transform 阶段把裸导入（vue/reka-ui）改写为宿主解析结果 → 依赖对齐、单 Vue 实例。
+ * - `oui-hub:<name>[@<version>]` 虚拟导入 → 读 `<root>/oui.lock.json`（或 `oui.json` 的 lockFile）→
+ *   未写版本时用该包的 `default` 版本 → 按该条目的 hub 地址取该版本 manifest（决定 module/css
+ *   相对路径）→ fetch 远程预编译 ESM（磁盘缓存 node_modules/.hub-cache/，内容寻址 key）→
+ *   注入远程 css；虚拟导入 → transform 阶段把裸导入（vue/reka-ui）改写为宿主解析结果。
  * - 远程模块的默认导出＝组件描述对象 `{ name, title?, description?, meta?, component }`：
  *   `import { Button } from 'oui-hub:@oui/button'` 拿具名导出的组件本体，
  *   `import desc from 'oui-hub:@oui/button'` 拿描述对象（运行时由 loadRemote 取 `component`）。
@@ -31,10 +31,15 @@ import type { Plugin, ResolvedConfig } from 'vite'
 
 import { lockFile, readJsonFile } from './config'
 
-export interface LockPackageEntry {
-  version: string
-  /** 该包来源 hub 地址（`oui use` 写入） */
+export interface LockVersion {
+  /** 该版本来源 hub 地址（`oui use` 写入） */
   registry?: string
+}
+
+/** 一个包在 lock 里的记录：多版本 + `default`（不带版本号的导入指向的版本）。 */
+export interface LockPackage {
+  default?: string
+  versions?: Record<string, LockVersion>
 }
 
 /** 某版本的产物描述（由组件发布时写入，使用端只读）。 */
@@ -48,11 +53,25 @@ export interface HubManifest {
 }
 
 export interface HubLock {
-  packages: Record<string, LockPackageEntry>
+  packages: Record<string, LockPackage>
 }
 
-/** 该包的 hub 地址：`OUI_REGISTRY`（构建期覆盖）> lock 条目自带地址。 */
-export function packageRegistry(entry: LockPackageEntry): string | null {
+/** 解析后的锁定目标。 */
+export interface LockTarget {
+  name: string
+  version: string
+  registry?: string
+}
+
+/** 包名 + 可选版本：`@scope/name` / `@scope/name@1.2.3`（按最后一个 `@` 切分）。 */
+export function splitNameVersion(spec: string): { name: string; version?: string } {
+  const at = spec.lastIndexOf('@')
+  if (at > 0) return { name: spec.slice(0, at), version: spec.slice(at + 1) || undefined }
+  return { name: spec }
+}
+
+/** 该版本的 hub 地址：`OUI_REGISTRY`（构建期覆盖）> lock 条目自带地址。 */
+export function packageRegistry(entry: LockVersion): string | null {
   const env = process.env['OUI_REGISTRY']
   if (env && env.trim()) return env.trim().replace(/\/+$/, '')
   const reg = entry.registry?.trim()
@@ -62,6 +81,29 @@ export function packageRegistry(entry: LockPackageEntry): string | null {
 /** 某版本的 manifest 地址（产物相对路径的权威来源）。 */
 export function manifestUrl(registry: string, name: string, version: string): string {
   return `${registry}/v/${name}@${version}/manifest.json`
+}
+
+/**
+ * 解析要加载的版本：显式版本 → 该版本；未给版本 → `default`。
+ * 未锁定该包/该版本时抛出可操作的错误。
+ */
+export function lockTarget(lock: HubLock, spec: string): LockTarget {
+  const { name, version: want } = splitNameVersion(spec)
+  const pkg = lock.packages[name]
+  if (!pkg) {
+    throw new Error(`openui_hub: ${name} 不在 oui.lock.json 中——先运行 \`oui use ${name}\``)
+  }
+  const version = want ?? pkg.default
+  if (!version) {
+    throw new Error(
+      `openui_hub: ${name} 没有默认版本——用 \`oui use ${name}\` 锁定，或写 'oui-hub:${name}@<version>'`,
+    )
+  }
+  const entry = pkg.versions?.[version]
+  if (!entry) {
+    throw new Error(`openui_hub: ${name}@${version} 未锁定——先运行 \`oui use ${name}@${version}\``)
+  }
+  return { name, version, registry: entry.registry }
 }
 
 export const CSS_PREFIX = 'oui-hub-css:'
@@ -99,26 +141,26 @@ export function readLock(cwd: string): HubLock | null {
   }
 }
 
-/** 解析 `oui-hub:<name>` / `oui-hub-css:<name>` 形态。非本插件 id 返回 null。 */
-export function parseHubSpecifier(source: string): { kind: 'module' | 'css'; name: string } | null {
+/** 解析 `oui-hub:<name>[@<version>]` / `oui-hub-css:<name>[@<version>]` 形态。非本插件 id 返回 null。 */
+export function parseHubSpecifier(source: string): { kind: 'module' | 'css'; spec: string } | null {
   if (source.startsWith(MODULE_PREFIX)) {
-    const name = source.slice(MODULE_PREFIX.length)
-    return name.length > 0 && !name.includes('?') && !name.includes('#') ? { kind: 'module', name } : null
+    const spec = source.slice(MODULE_PREFIX.length)
+    return spec.length > 0 && !spec.includes('?') && !spec.includes('#') ? { kind: 'module', spec } : null
   }
   if (source.startsWith(CSS_PREFIX)) {
-    const name = source.slice(CSS_PREFIX.length)
-    return name.length > 0 ? { kind: 'css', name } : null
+    const spec = source.slice(CSS_PREFIX.length)
+    return spec.length > 0 ? { kind: 'css', spec } : null
   }
   return null
 }
 
-function moduleIdFor(name: string): string {
-  return `\0${MODULE_PREFIX}${name}`
+function moduleIdFor(spec: string): string {
+  return `\0${MODULE_PREFIX}${spec}`
 }
-function cssIdFor(name: string): string {
-  return `\0${CSS_PREFIX}${name}.css`
+function cssIdFor(spec: string): string {
+  return `\0${CSS_PREFIX}${spec}.css`
 }
-function nameFromId(id: string, prefix: `\0${string}`): string {
+function specFromId(id: string, prefix: `\0${string}`): string {
   const rest = id.slice(prefix.length)
   return rest.endsWith('.css') ? rest.slice(0, -'.css'.length) : rest
 }
@@ -150,25 +192,25 @@ async function fetchCached(cwd: string, url: string, context: { warn: (msg: stri
   return text
 }
 
-/** 解析某包的产物 URL（读该版本 manifest）；无法确定 hub 地址或未声明入口时抛出可操作的错误。 */
+/** 解析某目标的产物 URL（读该版本 manifest）；无法确定 hub 地址或未声明入口时抛出可操作的错误。 */
 async function packageAssets(
-  name: string,
-  entry: LockPackageEntry,
+  target: LockTarget,
   manifest: (url: string) => Promise<HubManifest>,
 ): Promise<{ moduleUrl: string; cssUrls: string[] }> {
-  const registry = packageRegistry(entry)
+  const { name, version } = target
+  const registry = packageRegistry(target)
   if (!registry) {
     throw new Error(
-      `openui_hub: 无法确定 ${name} 的下载地址。` +
-        `请用 \`oui use ${name}\` 重新写入带 registry 的锁定条目，或设置环境变量 OUI_REGISTRY。`,
+      `openui_hub: 无法确定 ${name}@${version} 的下载地址。` +
+        `请用 \`oui use ${name}@${version}\` 重新锁定，或设置环境变量 OUI_REGISTRY。`,
     )
   }
-  const m = await manifest(manifestUrl(registry, name, entry.version))
+  const m = await manifest(manifestUrl(registry, name, version))
   const mod = m.entry?.module
   if (!mod) {
-    throw new Error(`openui_hub: ${name}@${entry.version} 的 manifest 未声明 entry.module`)
+    throw new Error(`openui_hub: ${name}@${version} 的 manifest 未声明 entry.module`)
   }
-  const head = `${registry}/v/${name}@${entry.version}`
+  const head = `${registry}/v/${name}@${version}`
   return {
     moduleUrl: `${head}/${mod}`,
     cssUrls: (m.entry?.css ?? []).filter((p) => !!p).map((p) => `${head}/${p}`),
@@ -205,31 +247,30 @@ export function hubVite(): Plugin {
       if (!lock || !cfg) return null
       const hit = parseHubSpecifier(source)
       if (!hit) return null
-      if (hit.kind === 'module') {
-        return lock.packages[hit.name] ? moduleIdFor(hit.name) : null
-      }
-      return cssIdFor(hit.name)
+      // 未锁定该包/该版本 → 返回 null（交由 vite 报模块找不到），不阻断其它插件的解析
+      const parsed = splitNameVersion(hit.spec)
+      const pkg = lock.packages[parsed.name]
+      if (!pkg || !pkg.versions?.[parsed.version ?? pkg.default ?? '']) return null
+      return hit.kind === 'module' ? moduleIdFor(hit.spec) : cssIdFor(hit.spec)
     },
 
     async load(id) {
       if (!lock || !cfg) return null
       const root = cfg.root
       if (id.startsWith('\0oui-hub:')) {
-        const name = nameFromId(id, '\0oui-hub:')
-        const entry = lock.packages[name]
-        if (!entry) return null
-        const urls = await packageAssets(name, entry, manifest)
+        const spec = specFromId(id, '\0oui-hub:')
+        const target = lockTarget(lock, spec)
+        const urls = await packageAssets(target, manifest)
         const code = await fetchCached(root, urls.moduleUrl, this)
         // 注入 css 虚拟导入（v1 支持首个 css；多余打印忽略）
         const css = urls.cssUrls[0]
-        const head = css ? `import "${CSS_PREFIX}${name}";\n` : ''
+        const head = css ? `import "${CSS_PREFIX}${spec}";\n` : ''
         return { code: `${head}${code}`, map: null }
       }
       if (id.startsWith('\0oui-hub-css:')) {
-        const name = nameFromId(id, '\0oui-hub-css:')
-        const entry = lock.packages[name]
-        if (!entry) return null
-        const cssUrl = (await packageAssets(name, entry, manifest)).cssUrls[0]
+        const spec = specFromId(id, '\0oui-hub-css:')
+        const target = lockTarget(lock, spec)
+        const cssUrl = (await packageAssets(target, manifest)).cssUrls[0]
         if (!cssUrl) return null
         const code = await fetchCached(root, cssUrl, this)
         return { code, map: null }
