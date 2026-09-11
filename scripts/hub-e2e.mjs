@@ -22,8 +22,8 @@ const SERVER_BIN_UNIX = join(SERVER_DIR, 'target/debug/openui-hub-server')
 const SERVER_EXE =
   process.env.HUB_SERVER_BIN ?? (process.platform === 'win32' ? SERVER_BIN : SERVER_BIN_UNIX)
 const REGISTRY_DIR = join(ROOT, 'packages/registry')
-/** 从 oui.json 动态取组件（版本/目录随配置，杜绝陈旧 pkg 目录误导断言） */
-const pkgCfg = JSON.parse(readFileSync(join(REGISTRY_DIR, 'oui.json'), 'utf8'))
+/** 从 oui.components.json 动态取组件（版本/目录随配置，杜绝陈旧 pkg 目录误导断言） */
+const pkgCfg = JSON.parse(readFileSync(join(REGISTRY_DIR, 'oui.components.json'), 'utf8'))
 const pkgs = pkgCfg.components.map((c) => ({
   name: c.name,
   version: c.version,
@@ -214,10 +214,10 @@ async function main() {
     const tagPkg = pkgs.find((p) => p.name.endsWith('/tag'))
     if (tagPkg) {
       const tagSrc = await fetchText(
-        `${REGISTRY}/v/${tagPkg.name}@${tagPkg.version}/source/src/ui/tag/tag.ts`,
+        `${REGISTRY}/v/${tagPkg.name}@${tagPkg.version}/source/src/ui/tag/index.ts`,
       )
       if (tagSrc.status !== 200 || !tagSrc.text.includes('defineComponent')) {
-        fail(`source tag.ts 不可用（status=${tagSrc.status}）`)
+        fail(`source index.ts 不可用（status=${tagSrc.status}）`)
       }
     }
     const src404 = await fetchText(
@@ -258,16 +258,99 @@ async function main() {
       ], { cwd: consumer })
       if (!srcUse.includes(`已复制 2 个源文件`)) fail(`use source 输出异常: ${srcUse}`)
       const vuePath = join(consumer, 'src/components/oui/button/Button.vue')
-      const tsPath = join(consumer, 'src/components/oui/button/button.ts')
+      const tsPath = join(consumer, 'src/components/oui/button/index.ts')
       if (!existsSync(vuePath) || !readFileSync(vuePath, 'utf8').includes('oui-btn')) {
         fail('use source 未正确落盘 Button.vue（含 oui-btn）')
       }
-      if (!existsSync(tsPath) || !readFileSync(tsPath, 'utf8').includes('Button.vue')) {
-        fail('use source 未正确落盘 button.ts（引用 Button.vue）')
+      if (!existsSync(tsPath) || !readFileSync(tsPath, 'utf8').includes("from './Button.vue'")) {
+        fail('use source 未正确落盘 index.ts（引用 Button.vue）')
       }
       console.log('[E2E] use --mode source 断言通过（源码落盘到消费工程）')
     } finally {
       rmSync(consumer, { recursive: true, force: true })
+    }
+
+    // 6b. oui create：组件模板（描述对象入口 + SFC）、登记与声明链路
+    const created = mkdtempSync(join(tmpdir(), 'hub-create-'))
+    try {
+      writeFileSync(
+        join(created, 'package.json'),
+        `${JSON.stringify({ name: 'tmp-create', version: '0.0.0', private: true }, null, 2)}\n`,
+      )
+      writeFileSync(
+        join(created, 'oui.json'),
+        `${JSON.stringify(
+          { type: 'vue-component', cssStrategy: 'vanilla', uno: true, peer: { vue: '^3.5.0' } },
+          null,
+          2,
+        )}\n`,
+      )
+      const out = runSync(
+        'oui create（临时工程）',
+        CLI_BIN,
+        ['create', '@e2e/widget', '--description', '临时组件', '--registry', REGISTRY, '--no-input'],
+        { cwd: created },
+      )
+      if (!out.includes('已登记组件 @e2e/widget@')) fail(`create 未打印登记结果:\n${out}`)
+
+      const entryFile = join(created, 'src/ui/widget/index.ts')
+      const sfcFile = join(created, 'src/ui/widget/Widget.vue')
+      if (!existsSync(entryFile) || !existsSync(sfcFile)) fail('create 未生成 index.ts / Widget.vue')
+      const entryText = readFileSync(entryFile, 'utf8')
+      for (const frag of [
+        "import Widget from './Widget.vue'",
+        'export { Widget }',
+        'name: "@e2e/widget"',
+        'component: Widget',
+      ]) {
+        if (!entryText.includes(frag)) fail(`入口缺少片段 ${frag}:\n${entryText}`)
+      }
+      if (readFileSync(sfcFile, 'utf8').includes('<style')) {
+        fail('uno=true 时模板不应写样式块（原子类由构建期生成）')
+      }
+
+      const comps = JSON.parse(readFileSync(join(created, 'oui.components.json'), 'utf8'))
+      const comp = comps.components?.find((c) => c.name === '@e2e/widget')
+      if (!comp) fail('create 未登记组件到 oui.components.json')
+      if (comp.entry !== 'src/ui/widget/index.ts') fail(`条目 entry 异常: ${comp.entry}`)
+      if ((comp.source ?? []).length !== 2) fail(`条目 source 应为 2 项: ${JSON.stringify(comp.source)}`)
+      if (comp.registry !== REGISTRY) fail(`条目 registry 异常: ${comp.registry}`)
+      if (!existsSync(join(created, 'tsconfig.dts.json'))) fail('create 未生成 tsconfig.dts.json')
+
+      const again = runSync('oui create（重跑幂等）', CLI_BIN, ['create', '@e2e/widget', '--no-input'], {
+        cwd: created,
+      })
+      if (!again.includes('模板文件已是最新')) fail(`重跑未保持幂等:\n${again}`)
+      console.log('[E2E] create 断言通过（模板 + 登记 + 声明链路 + 幂等）')
+    } finally {
+      rmSync(created, { recursive: true, force: true })
+    }
+
+    // 6c. create 产物可直接构建（真工程：registry 内一次性组件 → dist + 自动推导声明）
+    {
+      const compsPath = join(REGISTRY_DIR, 'oui.components.json')
+      const backup = readFileSync(compsPath, 'utf8')
+      const tmpSrc = join(REGISTRY_DIR, 'src/ui/tmp-widget')
+      const tmpPkg = join(REGISTRY_DIR, 'pkg/@oui/tmp-widget@0.1.4')
+      try {
+        runSync(
+          'oui create（registry 一次性组件）',
+          CLI_BIN,
+          ['create', '@oui/tmp-widget', '--version', '0.1.4', '--registry', REGISTRY, '--no-input'],
+          { cwd: REGISTRY_DIR },
+        )
+        runSync('构建 registry（含一次性组件）', 'pnpm', ['hub:build:registry'])
+        if (!existsSync(join(tmpPkg, 'dist/tmp-widget.mjs'))) fail('一次性组件缺 dist/tmp-widget.mjs')
+        const manifest = JSON.parse(readFileSync(join(tmpPkg, 'manifest.json'), 'utf8'))
+        if (!manifest.entry.types?.includes('index.d.ts')) {
+          fail(`一次性组件应自动带类型声明: ${manifest.entry.types}`)
+        }
+        console.log('[E2E] create 产物构建断言通过（dist + 自动推导声明）')
+      } finally {
+        writeFileSync(compsPath, backup)
+        rmSync(tmpSrc, { recursive: true, force: true })
+        rmSync(tmpPkg, { recursive: true, force: true })
+      }
     }
 
     // 7. oui use（remote 默认）→ lock + 本地类型落盘 + tsconfig paths 接线
@@ -280,29 +363,29 @@ async function main() {
     if (!useUntyped.includes(`${untypedCfg.name}@${untypedCfg.version} 未提供类型声明`)) {
       fail(`use 无类型包未提示类型缺失:\n${useUntyped}`)
     }
-    const lockPath = join(EXAMPLE_DIR, 'oui-hub.lock.json')
-    if (!existsSync(lockPath)) fail('未生成 oui-hub.lock.json')
+    const lockPath = join(EXAMPLE_DIR, 'oui.lock.json')
+    if (!existsSync(lockPath)) fail('未生成 oui.lock.json')
     const lockText = readFileSync(lockPath, 'utf8')
-    if (!/"module"\s*:/.test(lockText)) fail('lock 缺少相对 module 字段')
-    if (/"token"\s*:/.test(lockText)) fail('lock 不应包含 token')
+    if (!/"registry"\s*:/.test(lockText)) fail('lock 缺少 registry')
     const lockJson = JSON.parse(lockText)
+    for (const [pkg, entry] of Object.entries(lockJson.packages ?? {})) {
+      const keys = Object.keys(entry).sort().join(',')
+      if (keys !== 'registry,version') {
+        fail(`${pkg} 的 lock 条目只应含 version/registry（实际: ${keys}）`)
+      }
+    }
     if (typedCfg) {
-      const typedLock = lockJson.packages?.[typedCfg.name]
-      if (!typedLock?.types?.entry) fail(`lock 缺 ${typedCfg.name} 的 types.entry`)
-      if (!existsSync(join(EXAMPLE_DIR, typedLock.types.entry))) {
-        fail(`lock 指向的本地声明入口不存在: ${typedLock.types.entry}`)
-      }
-      for (const f of typedLock.types.files ?? []) {
-        if (!existsSync(join(EXAMPLE_DIR, f))) fail(`本地声明文件缺失: ${f}`)
-      }
-      if (lockJson.packages?.[untypedCfg.name]?.types) fail(`${untypedCfg.name} 无类型声明，lock 不应写 types`)
+      const typesEntry = join(EXAMPLE_DIR, 'oui-types', typedCfg.name, 'index.d.ts')
+      if (!existsSync(typesEntry)) fail(`本地声明入口未落盘: ${typesEntry}`)
+      const typesDir = join(EXAMPLE_DIR, 'oui-types', typedCfg.name, typedCfg.version)
+      if (!existsSync(typesDir)) fail(`本地声明目录未落盘: ${typesDir}`)
       const dtsText = readFileSync(join(EXAMPLE_DIR, 'oui.d.ts'), 'utf8')
       if (!dtsText.includes('@openui_hub/plugin_vite/remote')) fail('oui.d.ts 缺通配类型引用')
       const refCfgText = readFileSync(join(EXAMPLE_DIR, 'tsconfig.oui.json'), 'utf8')
       if (!refCfgText.includes(`"oui-hub:${typedCfg.name}"`)) {
         fail(`tsconfig.oui.json 缺 paths 映射: oui-hub:${typedCfg.name}`)
       }
-      console.log('[E2E] use 类型落盘断言通过（oui-types/ + lock.types + tsconfig paths）')
+      console.log('[E2E] use 类型落盘断言通过（oui-types/ + tsconfig paths）')
 
       // 7b. 本地声明被删后 `oui fix` 必须重建（不要求用户重跑 use）
       rmSync(join(EXAMPLE_DIR, 'oui-types', typedCfg.name), { recursive: true, force: true })
@@ -311,19 +394,21 @@ async function main() {
       })
       if (!fixed.includes('已重建')) fail(`fix 未重建本地类型声明:\n${fixed}`)
       const lockAfterFix = JSON.parse(readFileSync(lockPath, 'utf8'))
-      const typesAfterFix = lockAfterFix.packages?.[typedCfg.name]?.types
-      if (!typesAfterFix?.entry || !existsSync(join(EXAMPLE_DIR, typesAfterFix.entry))) {
+      if (lockAfterFix.packages?.[typedCfg.name]?.version !== typedCfg.version) {
+        fail('fix 不应改写 lock 条目')
+      }
+      if (!existsSync(join(EXAMPLE_DIR, 'oui-types', typedCfg.name, 'index.d.ts'))) {
         fail('fix 后本地类型入口仍缺失')
       }
-      for (const f of typesAfterFix.files ?? []) {
-        if (!existsSync(join(EXAMPLE_DIR, f))) fail(`fix 后声明文件仍缺失: ${f}`)
+      if (!existsSync(join(EXAMPLE_DIR, 'oui-types', typedCfg.name, typedCfg.version))) {
+        fail('fix 后本地声明目录仍缺失')
       }
       console.log('[E2E] fix 重建类型断言通过（缺失 → 按 lock 版本重新拉取）')
     }
 
     // 8. example 构建（插件通道端到端；先清插件磁盘缓存——e2e 每次用同版本 URL 承载新内容）
     rmSync(join(EXAMPLE_DIR, 'node_modules', '.hub-cache'), { recursive: true, force: true })
-    // lock 用相对路径 + 连接名：构建期用 OUI_REGISTRY 指定本次 e2e 的 registry
+    // lock 条目自带 hub 地址；构建期用 OUI_REGISTRY 改指向本次 e2e 的 registry
     runSync('构建 example', 'pnpm', ['--filter', '@openui_hub/example', 'build'], {
       env: { ...process.env, OUI_REGISTRY: REGISTRY },
     })
