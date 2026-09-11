@@ -10,22 +10,11 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
-    "@openui_hub/runtime": "workspace:*",
-    "reka-ui": "^2.10.1",
-    "vue": "^3.5.40",
-    "vue-router": "^5.2.0"
+    "@openui_hub/runtime": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",
-    "@types/node": "^24.13.3",
-    "@unocss/transformer-directives": "^66.7.5",
-    "@unocss/transformer-variant-group": "^66.7.5",
-    "@vitejs/plugin-vue": "^6.0.8",
-    "@vue/tsconfig": "^0.9.1",
-    "typescript": "^5.9.3",
-    "unocss": "^66.7.5",
-    "vite": "^8.1.5",
-    "vue-tsc": "^3.3.8"
+    "@vue/tsconfig": "^0.9.1"
   },
   "engines": {
     "node": "^22.18.0 || >=24.12.0"

@@ -149,9 +149,9 @@ export function remotePkgOf(
   return { moduleUrl: base + encodePath(entry.module), cssUrls: css.map((c) => base + encodePath(c)) }
 }
 
-/** 卡片「复制 CLI 命令」的剪贴板内容（构建期经 dpui use 锁定远程版本）。 */
+/** 卡片「复制 CLI 命令」的剪贴板内容（构建期经 oui use 锁定远程版本）。 */
 export function cliAddCommand(scope: string, name: string, version: string): string {
-  return [`pnpm add -D @openui_hub/plugin_vite`, `dpui use ${scoped(scope)}/${name}@${version}`].join('\n')
+  return [`pnpm add -D @openui_hub/plugin_vite`, `oui use ${scoped(scope)}/${name}@${version}`].join('\n')
 }
 
 /* ------------------------------------------------------------------ *
@@ -218,7 +218,7 @@ export interface HubSession {
   user: AuthUser
 }
 
-const SESSION_KEY = 'dpui.session'
+const SESSION_KEY = 'oui.session'
 
 function readSession(): HubSession | null {
   const raw = localStorage.getItem(SESSION_KEY)

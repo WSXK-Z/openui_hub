@@ -1,10 +1,9 @@
-# dpui CLI 多平台产物构建与发布
+# openui_hub CLI（oui）多平台产物构建与发布
 # 触发：workflow_dispatch（Actions 页手动）或推送 tag `cli-v*`
 # 说明：每个平台 job 在原生 runner 上 cargo build，经 scripts/hub-platform-pack.mjs
 #       归集到 packages/cli/vendor/<os>-<arch>/；merge job 合并全部 vendor
 #       后运行 npm 安装冒烟，再按 input.publish 决定是否 `npm publish`。
-# linux-arm64 暂未纳入（需 cross 容器链），v1 覆盖 win32-x64 / darwin-x64 /
-# darwin-arm64 / linux-x64。
+# 未纳入的平台：linux-arm64。当前覆盖 win32-x64 / darwin-x64 / darwin-arm64 / linux-x64。
 
 name: hub-cli-release
 

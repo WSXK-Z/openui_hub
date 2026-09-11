@@ -53,8 +53,8 @@ const error = ref('')
 const installText = computed(() => {
   const n = fullName.value
   const lines = [
-    `# CLI 锁定（生成 dpui-hub.lock.json）`,
-    `dpui use ${n}`,
+    `# CLI 锁定（生成 oui-hub.lock.json）`,
+    `oui use ${n}`,
     ``,
     `# 构建期（Vite 插件）`,
     `pnpm add @openui_hub/plugin_vite`,
@@ -62,7 +62,7 @@ const installText = computed(() => {
     `import hubVite from '@openui_hub/plugin_vite'`,
     `export default defineConfig({ plugins: [vue(), hubVite()] })`,
     `// 代码`,
-    `import { Button } from 'dpui-hub:${n}'`,
+    `import { Button } from 'oui-hub:${n}'`,
     ``,
     `# 运行期（HubRemote）`,
     `<HubRemote :pkg="'${resolveInfo.value?.moduleUrl ?? ''}'" />`,

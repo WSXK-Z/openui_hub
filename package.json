@@ -1,10 +1,11 @@
 {
-    "name": "dp_ui-workspace",
+    "name": "oui-workspace",
     "version": "0.0.0",
     "private": true,
     "scripts": {
         "hub:install-cli": "node scripts/hub-platform-pack.mjs && pnpm install --no-frozen-lockfile",
-        "hub:use-cli": "pnpm exec dpui --help",
+        "hub:use-cli": "pnpm exec oui --help",
+        "hub:dev": "pnpm --parallel --filter @openui_hub/server --filter @openui_hub/web --filter @openui_hub/example run dev",
         "hub:dev:web": "pnpm --filter @openui_hub/web dev",
         "hub:build:registry": "pnpm --filter @openui_hub/registry build",
         "hub:build:server": "pnpm --filter @openui_hub/server build",
@@ -18,6 +19,18 @@
         "hub:e2e": "node scripts/hub-e2e.mjs"
     },
     "devDependencies": {
-        "@openui_hub/cli": "workspace:*"
+        "@openui_hub/cli": "workspace:*",
+        "@types/node": "^24.13.3",
+        "@unocss/transformer-directives": "^66.7.5",
+        "@unocss/transformer-variant-group": "^66.7.5",
+        "@vitejs/plugin-vue": "^6.0.8",
+        "reka-ui": "^2.10.1",
+        "typescript": "^5.9.3",
+        "unocss": "^66.7.5",
+        "vite": "^8.1.5",
+        "vitest": "^4.0.0",
+        "vue": "^3.5.40",
+        "vue-router": "^5.2.0",
+        "vue-tsc": "^3.3.8"
     }
 }

@@ -1,9 +1,9 @@
 {
-  "include": ["src/**/*", "src/**/*.vue", "dpui.d.ts"],
+  "include": ["src/**/*", "src/**/*.vue", "oui.d.ts"],
   "compilerOptions": {
     "composite": true,
     "noEmit": true,
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.dpui.tsbuildinfo",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.oui.tsbuildinfo",
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",

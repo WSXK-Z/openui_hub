@@ -1,0 +1,26 @@
+{
+  "connection": "default",
+  "packages": {
+    "@openui_hub/button": {
+      "css": [
+        "dist/style.css"
+      ],
+      "module": "dist/button.mjs",
+      "version": "0.1.4"
+    },
+    "@oui/button": {
+      "css": [
+        "dist/style.css"
+      ],
+      "module": "dist/button.mjs",
+      "types": {
+        "entry": "oui-types/@oui/button/index.d.ts",
+        "files": [
+          "oui-types/@oui/button/0.1.4/Button.vue.d.ts",
+          "oui-types/@oui/button/0.1.4/button.d.ts"
+        ]
+      },
+      "version": "0.1.4"
+    }
+  }
+}

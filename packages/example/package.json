@@ -9,13 +9,8 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@openui_hub/plugin_vite": "workspace:*",
-    "vue": "^3.5.40"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.8",
-    "typescript": "^5.9.3",
-    "vite": "^8.1.5"
+    "@openui_hub/cli": "workspace:*",
+    "@openui_hub/plugin_vite": "workspace:*"
   },
   "engines": {
     "node": "^22.18.0 || >=24.12.0"

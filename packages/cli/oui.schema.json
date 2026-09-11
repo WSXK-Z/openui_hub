@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/WSXK-Z/openui_hub/main/packages/cli/oui.schema.json",
+  "$comment": "Project configuration is oui.json; oui.<connection>.json files are generated for selected hubs.",
+  "description": "Configuration for the oui component publisher and consumer.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "extends": {
+      "type": "string",
+      "description": "Parent project configuration to merge with this connection overlay."
+    },
+    "connection": {
+      "description": "Selected persistent hub connection names; the first one is the default.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "type": {
+      "type": "string",
+      "description": "Project or component type."
+    },
+    "cssStrategy": {
+      "type": "string",
+      "enum": [
+        "vanilla",
+        "atomic-unocss",
+        "atomic-var"
+      ]
+    },
+    "lockFile": {
+      "type": "string",
+      "default": "oui-hub.lock.json",
+      "description": "Path of the dependency lock file, relative to oui.json. Defaults to oui-hub.lock.json."
+    },
+    "outDir": {
+      "type": "string",
+      "default": "pkg",
+      "description": "Path of the built component package directory, relative to oui.json. Defaults to pkg."
+    },
+    "uno": {
+      "type": "boolean"
+    },
+    "peer": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/component"
+      }
+    },
+    "uses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/use"
+      }
+    }
+  },
+  "definitions": {
+    "component": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^@[^/\\s]+/[^/\\s]+$"
+        },
+        "version": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "outDir": {
+          "type": "string"
+        },
+        "entry": {
+          "type": "string",
+          "description": "Source entry relative to oui.json. If omitted, the Vite plugin auto-detects a unique matching file under src."
+        },
+        "cssStrategy": {
+          "type": "string",
+          "enum": [
+            "vanilla",
+            "atomic-unocss",
+            "atomic-var"
+          ]
+        },
+        "source": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "types": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    "use": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "remote",
+            "source"
+          ]
+        }
+      }
+    }
+  }
+}

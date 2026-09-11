@@ -87,7 +87,7 @@ onMounted(load)
     <p v-if="loading" class="text-sm text-gray-500">加载中…</p>
     <p v-else-if="error" class="text-sm text-red-500">加载失败：{{ error }}</p>
     <p v-else-if="filtered.length === 0" class="text-sm text-gray-500">
-      {{ items.length === 0 ? '仓库为空。发布第一个组件：dpui publish --dir <pkg 目录>' : '没有匹配的组件。' }}
+      {{ items.length === 0 ? '仓库为空。发布第一个组件：oui publish --dir <pkg 目录>' : '没有匹配的组件。' }}
     </p>
 
     <!--

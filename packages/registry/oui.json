@@ -1,12 +1,26 @@
 {
-  "cli": {
-    "connection": "default"
-  },
+  "$schema": "node_modules/@openui_hub/cli/oui.schema.json",
+  "connection": [
+    "default"
+  ],
+  "cssStrategy": "vanilla",
+  "type": "vue-component",
+  "uno": true,
   "components": [
+    {
+      "description": "openui_hub 样例按钮组件（vanilla 样式）",
+      "entry": "src/ui/button/button.ts",
+      "name": "@oui/button",
+      "source": [
+        "src/ui/button/button.ts",
+        "src/ui/button/Button.vue"
+      ],
+      "version": "0.1.4"
+    },
     {
       "description": "测试",
       "entry": "src/ui/button/button.ts",
-      "name": "@dp_ui_hub/button",
+      "name": "@openui_hub/button",
       "source": [
         "src/ui/button/button.ts",
         "src/ui/button/Button.vue"
@@ -15,28 +29,13 @@
       "version": "0.1.4"
     },
     {
-      "description": "openui_hub 样例按钮组件（vanilla 样式）",
-      "entry": "src/ui/button/button.ts",
-      "name": "@dp_ui/button",
-      "source": [
-        "src/ui/button/button.ts",
-        "src/ui/button/Button.vue"
-      ],
-      "version": "0.1.4"
-    },
-    {
       "description": "openui_hub 样例标签组件（UnoCSS 原子类）",
       "entry": "src/ui/tag/tag.ts",
-      "name": "@dp_ui/tag",
+      "name": "@oui/tag",
       "source": [
         "src/ui/tag/tag.ts"
       ],
       "version": "0.1.4"
     }
-  ],
-  "cssStrategy": "vanilla",
-  "lockFile": "dpui-hub.lock.json",
-  "outDir": "pkg",
-  "type": "vue-component",
-  "uno": true
+  ]
 }

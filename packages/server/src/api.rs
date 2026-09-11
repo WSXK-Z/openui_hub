@@ -449,17 +449,17 @@ mod tests {
     #[test]
     fn parse_detail() {
         assert_eq!(
-            parse_pkg_path("@dp_ui/button"),
-            Some(PkgTarget::Detail { scope: "@dp_ui".into(), name: "button".into() })
+            parse_pkg_path("@oui/button"),
+            Some(PkgTarget::Detail { scope: "@oui".into(), name: "button".into() })
         );
     }
 
     #[test]
     fn parse_manifest() {
         assert_eq!(
-            parse_pkg_path("@dp_ui/button@0.1.0/manifest.json"),
+            parse_pkg_path("@oui/button@0.1.0/manifest.json"),
             Some(PkgTarget::Manifest {
-                scope: "@dp_ui".into(),
+                scope: "@oui".into(),
                 name: "button".into(),
                 version: "0.1.0".into()
             })
@@ -469,32 +469,32 @@ mod tests {
     #[test]
     fn parse_files() {
         assert_eq!(
-            parse_pkg_path("@dp_ui/button@0.1.0/files.json"),
+            parse_pkg_path("@oui/button@0.1.0/files.json"),
             Some(PkgTarget::Files {
-                scope: "@dp_ui".into(),
+                scope: "@oui".into(),
                 name: "button".into(),
                 version: "0.1.0".into()
             })
         );
         // files.json 不得抢走 manifest.json 分支
         assert_eq!(
-            parse_pkg_path("@dp_ui/button@0.1.0/manifest.json"),
+            parse_pkg_path("@oui/button@0.1.0/manifest.json"),
             Some(PkgTarget::Manifest {
-                scope: "@dp_ui".into(),
+                scope: "@oui".into(),
                 name: "button".into(),
                 version: "0.1.0".into()
             })
         );
         // 无版本 → None
-        assert_eq!(parse_pkg_path("@dp_ui/button/files.json"), None);
+        assert_eq!(parse_pkg_path("@oui/button/files.json"), None);
     }
 
     #[test]
     fn parse_dist() {
         assert_eq!(
-            parse_pkg_path("@dp_ui/button@0.1.0/dist/button.mjs"),
+            parse_pkg_path("@oui/button@0.1.0/dist/button.mjs"),
             Some(PkgTarget::Dist {
-                scope: "@dp_ui".into(),
+                scope: "@oui".into(),
                 name: "button".into(),
                 version: "0.1.0".into(),
                 path: "button.mjs".into()
@@ -518,9 +518,9 @@ mod tests {
     #[test]
     fn parse_source() {
         assert_eq!(
-            parse_pkg_path("@dp_ui/button@0.1.0/source/src/ui/button/Button.vue"),
+            parse_pkg_path("@oui/button@0.1.0/source/src/ui/button/Button.vue"),
             Some(PkgTarget::Source {
-                scope: "@dp_ui".into(),
+                scope: "@oui".into(),
                 name: "button".into(),
                 version: "0.1.0".into(),
                 path: "src/ui/button/Button.vue".into()
@@ -531,30 +531,30 @@ mod tests {
     #[test]
     fn parse_types() {
         assert_eq!(
-            parse_pkg_path("@dp_ui/button@0.1.0/types/ui/button/button.d.ts"),
+            parse_pkg_path("@oui/button@0.1.0/types/ui/button/button.d.ts"),
             Some(PkgTarget::Types {
-                scope: "@dp_ui".into(),
+                scope: "@oui".into(),
                 name: "button".into(),
                 version: "0.1.0".into(),
                 path: "ui/button/button.d.ts".into()
             })
         );
         // 缺子路径 → None（与 dist/source 同规则）
-        assert_eq!(parse_pkg_path("@dp_ui/button@0.1.0/types"), None);
+        assert_eq!(parse_pkg_path("@oui/button@0.1.0/types"), None);
     }
 
     #[test]
     fn parse_source_rejects() {
         // segs[2] != "source"（近似段）或缺少子路径 → None
-        assert_eq!(parse_pkg_path("@dp_ui/button@0.1.0/sourc/x.vue"), None);
-        assert_eq!(parse_pkg_path("@dp_ui/button@0.1.0/source"), None);
+        assert_eq!(parse_pkg_path("@oui/button@0.1.0/sourc/x.vue"), None);
+        assert_eq!(parse_pkg_path("@oui/button@0.1.0/source"), None);
     }
 
     #[test]
     fn parse_rejects() {
         assert_eq!(parse_pkg_path("index.json"), None);
         assert_eq!(parse_pkg_path("plain/name"), None);
-        assert_eq!(parse_pkg_path("@dp_ui/button@0.1.0"), None); // version 需带子路径
-        assert_eq!(parse_pkg_path("@dp_ui/button/extra"), None);
+        assert_eq!(parse_pkg_path("@oui/button@0.1.0"), None); // version 需带子路径
+        assert_eq!(parse_pkg_path("@oui/button/extra"), None);
     }
 }

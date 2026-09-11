@@ -8,7 +8,7 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "rootDir": "src",
-    "outDir": ".dpui-hub/types"
+    "outDir": ".oui-hub/types"
   },
   "include": ["src/**/*.ts", "src/**/*.vue"]
 }

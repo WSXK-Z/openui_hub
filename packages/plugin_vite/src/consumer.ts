@@ -6,10 +6,10 @@
  * import hubVite from '@openui_hub/plugin_vite'
  * export default defineConfig({ plugins: [vue(), hubVite()] })
  * ```
- * 代码内：`import { Button } from 'dpui-hub:@dp_ui/button'`
+ * 代码内：`import { Button } from 'oui-hub:@oui/button'`
  *
  * 机制：
- * - `dpui-hub:<name>` 虚拟导入 → 读 `<root>/dpui-hub.lock.json` → fetch 远程预编译 ESM
+ * - `oui-hub:<name>` 虚拟导入 → 读 `<root>/oui-hub.lock.json` → fetch 远程预编译 ESM
  *   （磁盘缓存 node_modules/.hub-cache/，内容寻址 key）→ 注入远程 css 虚拟导入 →
  *   transform 阶段把裸导入（vue/reka-ui）改写为宿主解析结果 → 依赖对齐、单 Vue 实例。
  * - 无 lock 文件时插件完全无操作（对未用远程包的项目零干扰）。
@@ -35,7 +35,7 @@ export interface LockPackageEntry {
 }
 
 export interface HubLock {
-  /** 连接名（凭据在 ~/.dpui/credentials.json） */
+  /** 连接名（凭据在 ~/.oui/credentials.json） */
   connection?: string
   /** 旧格式：写死的 registry */
   registry?: string
@@ -45,9 +45,9 @@ export interface HubLock {
 /** 凭据文件里的连接（只读 registry；token 与本插件无关）。 */
 function connectionRegistry(name?: string): string | null {
   try {
-    const home = process.env['DPUI_HOME'] ?? process.env['USERPROFILE'] ?? process.env['HOME']
+    const home = process.env['OUI_HOME'] ?? process.env['USERPROFILE'] ?? process.env['HOME']
     if (!home) return null
-    const raw = readFileSync(join(home, '.dpui', 'credentials.json'), 'utf8')
+    const raw = readFileSync(join(home, '.oui', 'credentials.json'), 'utf8')
     const store = JSON.parse(raw) as {
       default?: string
       connections?: Record<string, { registry?: string }>
@@ -61,24 +61,25 @@ function connectionRegistry(name?: string): string | null {
 }
 
 /**
- * 解析 registry 基址：`DPUI_REGISTRY` > lock.connection（→ 凭据文件）> 旧 lock.registry
- * > 同目录 dpui.pkg.json 的 cli.connection / cli.registry。
+ * 解析 registry 基址：`OUI_REGISTRY` > lock.connection（→ 凭据文件）> 旧 lock.registry
+ * > 同目录 oui.json 的 connection。
  * 返回 null 表示无法确定（调用方给出明确报错）。
  */
 export function resolveRegistry(root: string, lock: HubLock): string | null {
-  const env = process.env['DPUI_REGISTRY']
+  const env = process.env['OUI_REGISTRY']
   if (env && env.trim()) return env.trim().replace(/\/+$/, '')
   const fromConn = connectionRegistry(lock.connection)
   if (fromConn) return fromConn
   if (lock.registry && lock.registry.trim()) return lock.registry.trim().replace(/\/+$/, '')
   try {
-    const cfg = JSON.parse(readFileSync(join(root, 'dpui.pkg.json'), 'utf8')) as {
-      cli?: { connection?: unknown; registry?: unknown }
+    const cfg = JSON.parse(readFileSync(join(root, 'oui.json'), 'utf8')) as {
+      connection?: unknown
+      registry?: unknown
     }
-    const viaCfgConn = connectionRegistry(typeof cfg.cli?.connection === 'string' ? cfg.cli.connection : undefined)
+    const viaCfgConn = connectionRegistry(Array.isArray(cfg.connection) ? cfg.connection[0] : undefined)
     if (viaCfgConn) return viaCfgConn
-    if (typeof cfg.cli?.registry === 'string' && cfg.cli.registry.trim()) {
-      return cfg.cli.registry.trim().replace(/\/+$/, '')
+    if (typeof cfg.registry === 'string' && cfg.registry.trim()) {
+      return cfg.registry.trim().replace(/\/+$/, '')
     }
   } catch {
     /* 无配置 */
@@ -104,24 +105,24 @@ export function packageUrls(
   }
 }
 
-export const CSS_PREFIX = 'dpui-hub-css:'
-export const MODULE_PREFIX = 'dpui-hub:'
+export const CSS_PREFIX = 'oui-hub-css:'
+export const MODULE_PREFIX = 'oui-hub:'
 
 /** sha256 hex（缓存 key / 文件名）。 */
 export function sha256Hex(input: string): string {
   return createHash('sha256').update(input).digest('hex')
 }
 
-/** 锁文件名：取同目录 dpui.pkg.json 的 lockFile，缺省 dpui-hub.lock.json。 */
+/** 锁文件名：取同目录 oui.json 的 lockFile，缺省 oui-hub.lock.json。 */
 export function lockFileName(root: string): string {
   try {
-    const raw = readFileSync(join(root, 'dpui.pkg.json'), 'utf8')
+    const raw = readFileSync(join(root, 'oui.json'), 'utf8')
     const cfg = JSON.parse(raw) as { lockFile?: unknown }
     if (typeof cfg?.lockFile === 'string' && cfg.lockFile.trim()) return cfg.lockFile.trim()
   } catch {
     /* 无配置或畸形 → 用默认名 */
   }
-  return 'dpui-hub.lock.json'
+  return 'oui-hub.lock.json'
 }
 
 /** 读 lock；缺失或畸形返回 null（插件无操作）。 */
@@ -146,7 +147,7 @@ export function readLock(cwd: string): HubLock | null {
   }
 }
 
-/** 解析 `dpui-hub:<name>` / `dpui-hub-css:<name>` 形态。非本插件 id 返回 null。 */
+/** 解析 `oui-hub:<name>` / `oui-hub-css:<name>` 形态。非本插件 id 返回 null。 */
 export function parseHubSpecifier(source: string): { kind: 'module' | 'css'; name: string } | null {
   if (source.startsWith(MODULE_PREFIX)) {
     const name = source.slice(MODULE_PREFIX.length)
@@ -209,7 +210,7 @@ function resolveEntryUrls(
   if (!urls) {
     throw new Error(
       `openui_hub: 无法确定 ${name} 的下载地址。lock 使用相对路径，需要 registry：` +
-        `请设置环境变量 DPUI_REGISTRY，或执行 \`dpui login\`（连接 ${lock.connection ?? 'default'}）后重试。`,
+        `请设置环境变量 OUI_REGISTRY，或执行 \`oui login\`（连接 ${lock.connection ?? 'default'}）后重试。`,
     )
   }
   return urls
@@ -220,7 +221,7 @@ export function hubVite(): Plugin {
   let lock: HubLock | null = null
 
   return {
-    name: 'dpui-hub-vite',
+    name: 'oui-hub-vite',
 
     configResolved(resolved) {
       cfg = resolved
@@ -240,8 +241,8 @@ export function hubVite(): Plugin {
     async load(id) {
       if (!lock || !cfg) return null
       const root = cfg.root
-      if (id.startsWith('\0dpui-hub:')) {
-        const name = nameFromId(id, '\0dpui-hub:')
+      if (id.startsWith('\0oui-hub:')) {
+        const name = nameFromId(id, '\0oui-hub:')
         const entry = lock.packages[name]
         if (!entry) return null
         const urls = resolveEntryUrls(root, lock, name, entry)
@@ -251,8 +252,8 @@ export function hubVite(): Plugin {
         const head = css ? `import "${CSS_PREFIX}${name}";\n` : ''
         return { code: `${head}${code}`, map: null }
       }
-      if (id.startsWith('\0dpui-hub-css:')) {
-        const name = nameFromId(id, '\0dpui-hub-css:')
+      if (id.startsWith('\0oui-hub-css:')) {
+        const name = nameFromId(id, '\0oui-hub-css:')
         const entry = lock.packages[name]
         if (!entry) return null
         const cssUrl = resolveEntryUrls(root, lock, name, entry).cssUrls[0]
@@ -264,7 +265,7 @@ export function hubVite(): Plugin {
     },
 
     async transform(code, id) {
-      if (!lock || !cfg || !id.startsWith('\0dpui-hub:')) return null
+      if (!lock || !cfg || !id.startsWith('\0oui-hub:')) return null
       if (!code.includes('from "') && !/import\s+"/.test(code)) return null
 
       // 收集远程模块内的裸导入（静态双引号，v1 约定产物），跳过本插件注入行与相对/http

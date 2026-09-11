@@ -8,8 +8,8 @@
 | ---------------------------- | -------------------------------------------------------------------- |
 | `packages/registry` | 官方组件真源：样例组件构建为可发布包（manifest + dist）              |
 | `packages/server`   | 托管服务端（Rust/axum）：publish / 分发 / manifest 校验              |
-| `packages/cli`      | `dpui` 本地终端工具（Rust）：npm 单包安装后提供 `dpui` 命令          |
-| `packages/plugin_vite`     | Vite 插件：构建期远程组件接入（`dpui-hub:@scope/name`）              |
+| `packages/cli`      | `oui` 本地终端工具（Rust）：npm 单包安装后提供 `oui` 命令            |
+| `packages/plugin_vite`     | Vite 插件：构建期远程组件接入（`oui-hub:@scope/name`）              |
 | `packages/runtime`  | 运行时远程加载：loader + `HubRemote` Vue 组件                        |
 | `packages/web`      | 平台使用端（组件瀑布流卡片 + 远程渲染预览，管理员可删除/发布）       |
 | `packages/example`  | 独立示例工程（使用者视角，验证构建期插件通道）                       |
@@ -25,17 +25,33 @@ pnpm install                       # 安装全部 workspace 依赖
 ```sh
 pnpm hub:build                     # 依次构建 registry / cli / server / vite / runtime
 pnpm hub:build:registry            # 构建官方组件包（manifest + dist）
-pnpm hub:build:cli                 # cargo build --release（dpui CLI）
+pnpm hub:build:cli                 # cargo build --release（oui CLI）
 pnpm hub:build:server              # cargo build --release（hub 服务端）
 pnpm hub:build:vite                # 构建 Vite 插件
 pnpm hub:build:runtime             # 构建运行时 loader
-pnpm hub:build:cli:platforms       # 归集当前平台 dpui 二进制到单包 vendor/<os>-<arch>/
+pnpm hub:build:cli:platforms       # 归集当前平台 oui 二进制到单包 vendor/<os>-<arch>/
 pnpm hub:test                      # server / vite / runtime 单元测试
-pnpm hub:test:cli-install          # npm 安装冒烟（pack → install → `dpui --help`）
+pnpm hub:test:cli-install          # npm 安装冒烟（pack → install → `oui --help`）
 pnpm hub:e2e                       # 端到端：registry → server → publish → 分发 → 远程加载
-pnpm hub:use-cli                   # 经 workspace 依赖执行 `dpui --help`
+pnpm hub:use-cli                   # 经 workspace 依赖执行 `oui --help`
 pnpm hub:dev:web                   # 启动平台前端（http://localhost:5173）
 ```
+
+### Hub 连接与项目配置
+
+连接是用户级持久化对象，可独立于项目管理：
+
+```sh
+oui hub add --name default --registry http://127.0.0.1:8787 --token <token>
+oui hub list
+oui hub delete default
+oui init
+```
+
+`oui init` 只在当前目录生成项目配置，并可选择一个或多个已有连接；它不会录入凭据。
+项目配置为 `oui.json`，选中的连接会生成对应的 `oui.<connection>.json` 文件。
+父文件保存项目设置；连接文件是轻量 overlay（含 `extends: "oui.json"` 与 `connection: ["<连接名>"]`），
+可通过 `OUI_CONFIG=oui.<connection>.json vite build` 使用，插件会自动合并父配置。
 
 平台前端（`packages/web`）自带 UnoCSS 配置与基础 reset，仓库内只依赖 `@openui_hub/runtime`；
 远程组件预览要求 `hub_server` 已启动（浏览器直连，不做 dev proxy）。

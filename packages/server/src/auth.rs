@@ -816,7 +816,7 @@ mod tests {
 
         // 建三个令牌：scoped publish / 全量 publish / 只读
         let mut tokens = Vec::new();
-        for perms in [json!(["publish:@dp_ui"]), json!(["publish"]), json!(["read"])] {
+        for perms in [json!(["publish:@oui"]), json!(["publish"]), json!(["read"])] {
             let (st, v) = call(
                 &app,
                 "POST",
@@ -833,7 +833,7 @@ mod tests {
 
         // scoped：同 scope 通过
         assert_eq!(
-            publish(&app, publish_body("@dp_ui/button", "0.1.0"), Some(&tokens[0])).await,
+            publish(&app, publish_body("@oui/button", "0.1.0"), Some(&tokens[0])).await,
             StatusCode::CREATED
         );
         // scoped：别的 scope 拒绝
@@ -860,21 +860,21 @@ mod tests {
         );
         // 只读令牌不能发布
         assert_eq!(
-            publish(&app, publish_body("@dp_ui/button", "0.2.0"), Some(&tokens[2])).await,
+            publish(&app, publish_body("@oui/button", "0.2.0"), Some(&tokens[2])).await,
             StatusCode::FORBIDDEN
         );
         // root 令牌（env）通过
         assert_eq!(
-            publish(&app, publish_body("@dp_ui/button", "0.2.0"), Some(ROOT_TOKEN)).await,
+            publish(&app, publish_body("@oui/button", "0.2.0"), Some(ROOT_TOKEN)).await,
             StatusCode::CREATED
         );
         // 伪造令牌
         assert_eq!(
-            publish(&app, publish_body("@dp_ui/button", "0.3.0"), Some("dpui_deadbeef")).await,
+            publish(&app, publish_body("@oui/button", "0.3.0"), Some("oui_deadbeef")).await,
             StatusCode::UNAUTHORIZED
         );
         // 无令牌
-        assert_eq!(publish(&app, publish_body("@dp_ui/button", "0.3.0"), None).await, StatusCode::UNAUTHORIZED);
+        assert_eq!(publish(&app, publish_body("@oui/button", "0.3.0"), None).await, StatusCode::UNAUTHORIZED);
 
         // 列表：明文不落库，字段齐全
         let (st, v) = call(&app, "GET", "/api/tokens", None, Some(&admin)).await;
@@ -888,7 +888,7 @@ mod tests {
         // 令牌使用后写入 lastUsedAt
         let scoped_id = arr
             .iter()
-            .find(|t| t["permissions"] == json!(["publish:@dp_ui"]))
+            .find(|t| t["permissions"] == json!(["publish:@oui"]))
             .unwrap()["id"]
             .as_i64()
             .unwrap();
@@ -905,7 +905,7 @@ mod tests {
         .await;
         assert_eq!(st, StatusCode::OK);
         assert_eq!(
-            publish(&app, publish_body("@dp_ui/button", "0.4.0"), Some(&tokens[0])).await,
+            publish(&app, publish_body("@oui/button", "0.4.0"), Some(&tokens[0])).await,
             StatusCode::UNAUTHORIZED
         );
         // 启用后恢复可用
@@ -919,14 +919,14 @@ mod tests {
         .await;
         assert_eq!(st, StatusCode::OK);
         assert_eq!(
-            publish(&app, publish_body("@dp_ui/button", "0.4.0"), Some(&tokens[0])).await,
+            publish(&app, publish_body("@oui/button", "0.4.0"), Some(&tokens[0])).await,
             StatusCode::CREATED
         );
         // 删除后永久失效
         let (st, _) = call(&app, "DELETE", &format!("/api/tokens/{scoped_id}"), None, Some(&admin)).await;
         assert_eq!(st, StatusCode::OK);
         assert_eq!(
-            publish(&app, publish_body("@dp_ui/button", "0.5.0"), Some(&tokens[0])).await,
+            publish(&app, publish_body("@oui/button", "0.5.0"), Some(&tokens[0])).await,
             StatusCode::UNAUTHORIZED
         );
     }
@@ -1071,20 +1071,20 @@ mod tests {
     #[test]
     fn permission_helpers() {
         assert!(valid_permission("publish"));
-        assert!(valid_permission("publish:@dp_ui"));
+        assert!(valid_permission("publish:@oui"));
         assert!(valid_permission("read"));
         assert!(valid_permission("admin"));
-        assert!(!valid_permission("publish:dp_ui"));
+        assert!(!valid_permission("publish:oui"));
         assert!(!valid_permission("publish:"));
         assert!(!valid_permission("publish:@a/b"));
         assert!(!valid_permission("write"));
 
-        let perms = vec!["publish:@dp_ui".to_string()];
-        assert!(can_publish(&perms, "@dp_ui"));
+        let perms = vec!["publish:@oui".to_string()];
+        assert!(can_publish(&perms, "@oui"));
         assert!(!can_publish(&perms, "@other"));
         assert!(can_publish(&vec!["publish".to_string()], "@anything"));
         assert!(can_publish(&vec!["admin".to_string()], "@anything"));
-        assert!(!can_publish(&vec!["read".to_string()], "@dp_ui"));
+        assert!(!can_publish(&vec!["read".to_string()], "@oui"));
 
         let hash = hash_password("secret1").unwrap();
         assert!(hash.starts_with("$argon2"));

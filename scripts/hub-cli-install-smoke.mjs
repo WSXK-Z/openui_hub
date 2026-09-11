@@ -1,5 +1,5 @@
 /**
- * npm 安装冒烟：pack @openui_hub/cli 单包 → 本地 npm install → 经 bin shim 执行 dpui。
+ * npm 安装冒烟：pack @openui_hub/cli 单包 → 本地 npm install → 经 bin shim 执行 oui。
  * 验证"通过 node 环境安装"闭环（离线 registry）。
  */
 
@@ -47,18 +47,18 @@ try {
     '--no-save', '--no-audit', '--no-fund', '--registry', 'http://127.0.0.1:9',
   ])
 
-  // 3) 经安装后的 shim 执行（模拟 `dpui`）
-  const shim = join(appDir, 'node_modules', '@dp_ui', 'hub_cli', 'bin', 'dpui.js')
+  // 3) 经安装后的 shim 执行（模拟 `oui`）
+  const shim = join(appDir, 'node_modules', '@openui_hub', 'cli', 'bin', 'oui.js')
   const version = spawnSync(process.execPath, [shim, '--version'], { encoding: 'utf8' })
-  if (version.status !== 0 || !/dpui \d/.test(`${version.stdout ?? ''}`)) {
-    console.error(`dpui --version 失败: ${version.status} ${version.stdout}${version.stderr}`)
+  if (version.status !== 0 || !/oui \d/.test(`${version.stdout ?? ''}`)) {
+    console.error(`oui --version 失败: ${version.status} ${version.stdout}${version.stderr}`)
     process.exit(1)
   }
   const help = spawnSync(process.execPath, [shim, '--help'], { encoding: 'utf8' })
   const helpText = `${help.stdout ?? ''}${help.stderr ?? ''}`
   for (const kw of ['publish', 'manifest', 'use', 'init']) {
     if (!helpText.includes(kw)) {
-      console.error(`dpui --help 缺关键字 ${kw}:\n${helpText}`)
+      console.error(`oui --help 缺关键字 ${kw}:\n${helpText}`)
       process.exit(1)
     }
   }

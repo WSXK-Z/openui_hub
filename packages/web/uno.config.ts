@@ -7,11 +7,10 @@ import {
 } from 'unocss'
 
 /**
- * 设计令牌。数值原由 `@dp_ui/core` 的 `presetDpUi` 提供，该包已随仓库 hub 化整理移除，
- * 这里只内联本平台前端实际用到的三组（圆角 / 阴影 / 字号），取值与原来完全一致。
+ * 设计令牌：本平台前端用到的三组取值（圆角 / 阴影 / 字号）。
  *
- * 不能直接删掉：preset-mini 的同名默认值不同 —— `rounded` 4px→6px、`rounded-sm` 2px→4px、
- * `rounded-md` 6px→8px、`text-sm` 14px→13px、`text-lg` 18px→16px，删掉会带来视觉回归。
+ * preset-mini 的同名默认值不同 —— `rounded` 4px→6px、`rounded-sm` 2px→4px、
+ * `rounded-md` 6px→8px、`text-sm` 14px→13px、`text-lg` 18px→16px；删掉会带来视觉回归。
  */
 const theme: PresetMiniTheme = {
   borderRadius: { none: '0px', sm: '4px', DEFAULT: '6px', md: '8px', lg: '12px', full: '9999px' },

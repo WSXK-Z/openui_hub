@@ -1,12 +1,12 @@
 {
-  "include": ["src/**/*", "src/**/*.vue", "dpui.d.ts"],
+  "include": ["src/**/*", "src/**/*.vue", "oui.d.ts"],
   "compilerOptions": {
     "paths": {
-      "dpui-hub:@dp_ui/button": ["./dpui-types/@dp_ui/button/index"]
+      "oui-hub:@oui/button": ["./oui-types/@oui/button/index"]
     },
     "composite": true,
     "noEmit": true,
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.dpui.tsbuildinfo",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.oui.tsbuildinfo",
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../node_modules/@openui_hub/cli/oui.schema.json",
+  "connection": [
+    "default"
+  ],
+  "cssStrategy": "vanilla",
+  "type": "vue-component",
+  "uno": true,
+  "uses": [
+    {
+      "mode": "remote",
+      "name": "@oui/button",
+      "version": "0.1.4"
+    },
+    {
+      "mode": "remote",
+      "name": "@openui_hub/button",
+      "version": "0.1.4"
+    }
+  ]
+}

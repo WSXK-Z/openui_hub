@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// 远程组件：由 hubVite 插件在构建期解析 dpui-hub.lock.json 并从 hub 拉取
-import { Button } from 'dpui-hub:@dp_ui_hub/button'
+// 远程组件：由 hubVite 插件在构建期解析 oui-hub.lock.json 并从 hub 拉取
+import { Button } from 'oui-hub:@openui_hub/button'
 </script>
 
 <template>

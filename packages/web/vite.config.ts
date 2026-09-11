@@ -24,7 +24,7 @@ function isVueModule(id: string): boolean {
  */
 function remoteVueShim(): Plugin {
   return {
-    name: 'dpui-hub-remote-vue-shim',
+    name: 'oui-hub-remote-vue-shim',
     apply: 'build',
     transformIndexHtml(html) {
       return html.replace('"/src/remote-vue-shim.ts"', `"/assets/${SHIM_ENTRY}.js"`)

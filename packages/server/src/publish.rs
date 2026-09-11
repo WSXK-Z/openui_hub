@@ -161,7 +161,7 @@ mod tests {
     }
 
     const VALID_MANIFEST: &str = r#"{
-      "name": "@dp_ui/button",
+      "name": "@oui/button",
       "version": "0.1.0",
       "type": "vue-component",
       "description": "样例按钮",
@@ -223,7 +223,7 @@ mod tests {
         make_tar(&[
             ("manifest.json", VALID_MANIFEST.as_bytes()),
             ("dist/button.mjs", b"import { x } from \"vue\";\nexport default {}"),
-            ("dist/button.style.css", b".dpui-btn { color: red }"),
+            ("dist/button.style.css", b".oui-btn { color: red }"),
         ])
     }
 
@@ -271,11 +271,11 @@ mod tests {
         assert_eq!(publish(&app, valid_body(), Some(TOKEN)).await, StatusCode::CREATED);
 
         // resolve
-        let (st, v) = get_json(&app, "/resolve/@dp_ui/button").await;
+        let (st, v) = get_json(&app, "/resolve/@oui/button").await;
         assert_eq!(st, StatusCode::OK);
         assert_eq!(v["version"], "0.1.0");
         let module_url = v["moduleUrl"].as_str().unwrap().to_string();
-        assert!(module_url.contains("/v/@dp_ui/button@0.1.0/dist/button.mjs"), "{module_url}");
+        assert!(module_url.contains("/v/@oui/button@0.1.0/dist/button.mjs"), "{module_url}");
         let css = v["cssUrls"].as_array().unwrap();
         assert_eq!(css.len(), 1);
 
@@ -289,9 +289,9 @@ mod tests {
         assert!(String::from_utf8_lossy(&bytes).contains("\"vue\""));
 
         // manifest
-        let (st3, m) = get_json(&app, "/v/@dp_ui/button@0.1.0/manifest.json").await;
+        let (st3, m) = get_json(&app, "/v/@oui/button@0.1.0/manifest.json").await;
         assert_eq!(st3, StatusCode::OK);
-        assert_eq!(m["name"], "@dp_ui/button");
+        assert_eq!(m["name"], "@oui/button");
 
         // index
         let (st4, idx) = get_json(&app, "/v/index.json").await;
@@ -299,7 +299,7 @@ mod tests {
         assert!(idx["packages"].as_array().unwrap().iter().any(|p| p["name"] == "button"));
 
         // detail
-        let (st5, d) = get_json(&app, "/v/@dp_ui/button").await;
+        let (st5, d) = get_json(&app, "/v/@oui/button").await;
         assert_eq!(st5, StatusCode::OK);
         assert_eq!(d["versions"].as_array().unwrap().len(), 1);
     }
@@ -315,26 +315,26 @@ mod tests {
         let body = make_tar(&[
             ("manifest.json", manifest.as_bytes()),
             ("dist/button.mjs", b"export default {}"),
-            ("dist/button.style.css", b".dpui-btn { color: red }"),
-            ("source/src/ui/button/Button.vue", b"<template><button class=\"dpui-btn\">x</button></template>"),
+            ("dist/button.style.css", b".oui-btn { color: red }"),
+            ("source/src/ui/button/Button.vue", b"<template><button class=\"oui-btn\">x</button></template>"),
         ]);
         assert_eq!(publish(&app, body, Some(TOKEN)).await, StatusCode::CREATED);
 
         // source 文件可分发且内容一致
-        let (st, bytes) = get_raw(&app, "/v/@dp_ui/button@0.1.1/source/src/ui/button/Button.vue").await;
+        let (st, bytes) = get_raw(&app, "/v/@oui/button@0.1.1/source/src/ui/button/Button.vue").await;
         assert_eq!(st, StatusCode::OK);
-        assert!(String::from_utf8_lossy(&bytes).contains("dpui-btn"));
+        assert!(String::from_utf8_lossy(&bytes).contains("oui-btn"));
 
         // 缺失 source 文件 → 404
-        let (st2, _) = get_raw(&app, "/v/@dp_ui/button@0.1.1/source/src/ui/button/missing.ts").await;
+        let (st2, _) = get_raw(&app, "/v/@oui/button@0.1.1/source/src/ui/button/missing.ts").await;
         assert_eq!(st2, StatusCode::NOT_FOUND);
 
         // 非 source 段 / 无子路径 → 404
-        let (st3, _) = get_raw(&app, "/v/@dp_ui/button@0.1.1/sourc/x.ts").await;
+        let (st3, _) = get_raw(&app, "/v/@oui/button@0.1.1/sourc/x.ts").await;
         assert_eq!(st3, StatusCode::NOT_FOUND);
 
         // manifest 携带 source（detail 回显完整 manifest）
-        let (st4, d) = get_json(&app, "/v/@dp_ui/button@0.1.1/manifest.json").await;
+        let (st4, d) = get_json(&app, "/v/@oui/button@0.1.1/manifest.json").await;
         assert_eq!(st4, StatusCode::OK);
         assert_eq!(d["source"]["files"][0], "source/src/ui/button/Button.vue");
     }
@@ -351,23 +351,23 @@ mod tests {
         let body = make_tar(&[
             ("manifest.json", manifest.as_bytes()),
             ("dist/button.mjs", b"import { x } from \"vue\";\nexport default {}"),
-            ("dist/button.style.css", b".dpui-btn { color: red }"),
+            ("dist/button.style.css", b".oui-btn { color: red }"),
             ("types/button.d.ts", b"export { default as Button } from './Button.vue'"),
             ("types/Button.vue.d.ts", b"declare const c: unknown\nexport default c"),
         ]);
         assert_eq!(publish(&app, body, Some(TOKEN)).await, StatusCode::CREATED);
 
         // resolve 透传 entry.types/typesFiles（消费端据此落盘精确类型）
-        let (st, v) = get_json(&app, "/resolve/@dp_ui/button").await;
+        let (st, v) = get_json(&app, "/resolve/@oui/button").await;
         assert_eq!(st, StatusCode::OK);
         assert_eq!(v["entry"]["types"], "types/button.d.ts");
         assert_eq!(v["entry"]["typesFiles"].as_array().unwrap().len(), 2);
 
         // 声明文件可分发（相对引用其兄弟声明，故两者都必须可取）；与 dist/ 同级
-        let (st2, bytes) = get_raw(&app, "/v/@dp_ui/button@0.1.2/types/button.d.ts").await;
+        let (st2, bytes) = get_raw(&app, "/v/@oui/button@0.1.2/types/button.d.ts").await;
         assert_eq!(st2, StatusCode::OK);
         assert!(String::from_utf8_lossy(&bytes).contains("./Button.vue"));
-        let (st3, _) = get_raw(&app, "/v/@dp_ui/button@0.1.2/types/Nope.d.ts").await;
+        let (st3, _) = get_raw(&app, "/v/@oui/button@0.1.2/types/Nope.d.ts").await;
         assert_eq!(st3, StatusCode::NOT_FOUND);
 
         // manifest 声明了但归档里没有的声明文件 → 400（不能发布半截类型）
@@ -400,9 +400,9 @@ mod tests {
         assert_eq!(publish(&app, body, Some(TOKEN)).await, StatusCode::CREATED);
 
         // 公开只读：不带 Authorization 也能取到权威清单
-        let (st, v) = get_json(&app, "/v/@dp_ui/button@0.1.3/files.json").await;
+        let (st, v) = get_json(&app, "/v/@oui/button@0.1.3/files.json").await;
         assert_eq!(st, StatusCode::OK);
-        assert_eq!(v["scope"], "@dp_ui");
+        assert_eq!(v["scope"], "@oui");
         assert_eq!(v["name"], "button");
         assert_eq!(v["version"], "0.1.3");
         let files = v["files"].as_array().unwrap();
@@ -422,12 +422,12 @@ mod tests {
         }
 
         // 未知版本 → 404 "version not found"
-        let (st2, e2) = get_json(&app, "/v/@dp_ui/button@9.9.9/files.json").await;
+        let (st2, e2) = get_json(&app, "/v/@oui/button@9.9.9/files.json").await;
         assert_eq!(st2, StatusCode::NOT_FOUND);
         assert!(e2["error"].as_str().unwrap().contains("version not found"), "{e2}");
 
         // 未知包 → 404 "package not found"
-        let (st3, e3) = get_json(&app, "/v/@dp_ui/nope@0.1.3/files.json").await;
+        let (st3, e3) = get_json(&app, "/v/@oui/nope@0.1.3/files.json").await;
         assert_eq!(st3, StatusCode::NOT_FOUND);
         assert!(e3["error"].as_str().unwrap().contains("package not found"), "{e3}");
     }
@@ -482,7 +482,7 @@ mod tests {
     async fn manifest_route_404_for_unknown_version() {
         let (app, _dir) = make_app().await;
         assert_eq!(publish(&app, valid_body(), Some(TOKEN)).await, StatusCode::CREATED);
-        let (st, _) = get_json(&app, "/v/@dp_ui/button@9.9.9/manifest.json").await;
+        let (st, _) = get_json(&app, "/v/@oui/button@9.9.9/manifest.json").await;
         assert_eq!(st, StatusCode::NOT_FOUND);
     }
 }

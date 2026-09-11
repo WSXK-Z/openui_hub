@@ -212,33 +212,33 @@ mod tests {
         let admin = setup_admin(&app).await;
         for v in ["0.1.0", "0.2.0", "0.3.0"] {
             assert_eq!(
-                publish(&app, pkg_body("@dp_ui/button", v, b"export default {}"), Some(ROOT_TOKEN))
+                publish(&app, pkg_body("@oui/button", v, b"export default {}"), Some(ROOT_TOKEN))
                     .await,
                 StatusCode::CREATED
             );
         }
 
         // 删 latest → latest 重算为剩余最近发布者
-        let (st, v) = delete(&app, "/api/packages/@dp_ui/button@0.3.0", Some(&admin)).await;
+        let (st, v) = delete(&app, "/api/packages/@oui/button@0.3.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK, "{v}");
-        assert_eq!(v["deleted"], "@dp_ui/button@0.3.0");
+        assert_eq!(v["deleted"], "@oui/button@0.3.0");
         assert_eq!(v["latest"], "0.2.0");
 
         // 被删版本 manifest / files / dist 均 404；其余版本仍可读
         assert_eq!(
-            call(&app, "GET", "/v/@dp_ui/button@0.3.0/manifest.json", None, None).await.0,
+            call(&app, "GET", "/v/@oui/button@0.3.0/manifest.json", None, None).await.0,
             StatusCode::NOT_FOUND
         );
         assert_eq!(
-            call(&app, "GET", "/v/@dp_ui/button@0.3.0/files.json", None, None).await.0,
+            call(&app, "GET", "/v/@oui/button@0.3.0/files.json", None, None).await.0,
             StatusCode::NOT_FOUND
         );
         assert_eq!(
-            call(&app, "GET", "/v/@dp_ui/button@0.2.0/manifest.json", None, None).await.0,
+            call(&app, "GET", "/v/@oui/button@0.2.0/manifest.json", None, None).await.0,
             StatusCode::OK
         );
         assert_eq!(
-            call(&app, "GET", "/v/@dp_ui/button@0.2.0/dist/x.mjs", None, None).await.0,
+            call(&app, "GET", "/v/@oui/button@0.2.0/dist/x.mjs", None, None).await.0,
             StatusCode::OK
         );
 
@@ -254,18 +254,18 @@ mod tests {
         assert_eq!(p["latest"], "0.2.0", "{idx}");
 
         // 删非 latest → latest 不变
-        let (st, v) = delete(&app, "/api/packages/@dp_ui/button@0.1.0", Some(&admin)).await;
+        let (st, v) = delete(&app, "/api/packages/@oui/button@0.1.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK, "{v}");
         assert_eq!(v["latest"], "0.2.0");
 
         // 删最后一个版本 → 包记录保留、latest 为 null、detail 无版本
-        let (st, v) = delete(&app, "/api/packages/@dp_ui/button@0.2.0", Some(&admin)).await;
+        let (st, v) = delete(&app, "/api/packages/@oui/button@0.2.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK, "{v}");
         assert!(v["latest"].is_null(), "{v}");
-        let (st, d) = call(&app, "GET", "/v/@dp_ui/button", None, None).await;
+        let (st, d) = call(&app, "GET", "/v/@oui/button", None, None).await;
         assert_eq!(st, StatusCode::OK, "{d}");
         assert_eq!(d["versions"].as_array().unwrap().len(), 0, "{d}");
-        assert_eq!(call(&app, "GET", "/resolve/@dp_ui/button", None, None).await.0, StatusCode::NOT_FOUND);
+        assert_eq!(call(&app, "GET", "/resolve/@oui/button", None, None).await.0, StatusCode::NOT_FOUND);
         // 无版本的包不再出现在 index.json（但 detail 仍 200 + versions 空）
         let (_, idx) = call(&app, "GET", "/v/index.json", None, None).await;
         assert!(
@@ -273,15 +273,15 @@ mod tests {
             "{idx}"
         );
         // store 侧：versions / version_files 行已清理
-        let pid = store.package_id("@dp_ui", "button").await.unwrap().unwrap();
+        let pid = store.package_id("@oui", "button").await.unwrap().unwrap();
         assert!(store.versions_of(pid).await.unwrap().is_empty());
         assert!(store.version_files(pid, "0.2.0").await.unwrap().is_empty());
 
         // 重复删除 → 404 version not found；未知包 → 404 package not found
-        let (st, v) = delete(&app, "/api/packages/@dp_ui/button@0.2.0", Some(&admin)).await;
+        let (st, v) = delete(&app, "/api/packages/@oui/button@0.2.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::NOT_FOUND);
         assert_eq!(v["error"], "version not found");
-        let (st, v) = delete(&app, "/api/packages/@dp_ui/nope@0.1.0", Some(&admin)).await;
+        let (st, v) = delete(&app, "/api/packages/@oui/nope@0.1.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::NOT_FOUND);
         assert_eq!(v["error"], "package not found");
     }
@@ -292,7 +292,7 @@ mod tests {
         let admin = setup_admin(&app).await;
         for v in ["0.1.0", "0.2.0"] {
             assert_eq!(
-                publish(&app, pkg_body("@dp_ui/button", v, b"x"), Some(ROOT_TOKEN)).await,
+                publish(&app, pkg_body("@oui/button", v, b"x"), Some(ROOT_TOKEN)).await,
                 StatusCode::CREATED
             );
         }
@@ -307,7 +307,7 @@ mod tests {
         assert_eq!(entry["latest"], "0.2.0");
 
         // 删一个版本、包仍有其它版本 → 仍列出（防过滤过度）
-        let (st, _) = delete(&app, "/api/packages/@dp_ui/button@0.2.0", Some(&admin)).await;
+        let (st, _) = delete(&app, "/api/packages/@oui/button@0.2.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK);
         let (_, idx) = call(&app, "GET", "/v/index.json", None, None).await;
         let entry = idx["packages"]
@@ -319,24 +319,24 @@ mod tests {
         assert_eq!(entry["latest"], "0.1.0", "{idx}");
 
         // 删到无版本 → 不再列出；detail 仍 200 + versions 空、resolve 仍 404
-        let (st, _) = delete(&app, "/api/packages/@dp_ui/button@0.1.0", Some(&admin)).await;
+        let (st, _) = delete(&app, "/api/packages/@oui/button@0.1.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK);
         let (_, idx) = call(&app, "GET", "/v/index.json", None, None).await;
         assert!(
             idx["packages"].as_array().unwrap().iter().all(|p| p["name"] != "button"),
             "{idx}"
         );
-        let (st, d) = call(&app, "GET", "/v/@dp_ui/button", None, None).await;
+        let (st, d) = call(&app, "GET", "/v/@oui/button", None, None).await;
         assert_eq!(st, StatusCode::OK, "{d}");
         assert_eq!(d["versions"].as_array().unwrap().len(), 0, "{d}");
         assert_eq!(
-            call(&app, "GET", "/resolve/@dp_ui/button", None, None).await.0,
+            call(&app, "GET", "/resolve/@oui/button", None, None).await.0,
             StatusCode::NOT_FOUND
         );
 
         // 重新发布 → index 重新列出且 latest 正确
         assert_eq!(
-            publish(&app, pkg_body("@dp_ui/button", "0.3.0", b"x"), Some(ROOT_TOKEN)).await,
+            publish(&app, pkg_body("@oui/button", "0.3.0", b"x"), Some(ROOT_TOKEN)).await,
             StatusCode::CREATED
         );
         let (_, idx) = call(&app, "GET", "/v/index.json", None, None).await;
@@ -354,26 +354,26 @@ mod tests {
         let (app, _dir, store) = make_app().await;
         let admin = setup_admin(&app).await;
         assert_eq!(
-            publish(&app, pkg_body("@dp_ui/button", "0.1.0", b"same"), Some(ROOT_TOKEN)).await,
+            publish(&app, pkg_body("@oui/button", "0.1.0", b"same"), Some(ROOT_TOKEN)).await,
             StatusCode::CREATED
         );
         assert_eq!(
-            publish(&app, pkg_body("@dp_ui/button", "0.2.0", b"other"), Some(ROOT_TOKEN)).await,
+            publish(&app, pkg_body("@oui/button", "0.2.0", b"other"), Some(ROOT_TOKEN)).await,
             StatusCode::CREATED
         );
-        let pid = store.package_id("@dp_ui", "button").await.unwrap().unwrap();
+        let pid = store.package_id("@oui", "button").await.unwrap().unwrap();
         let sha1 = store.version_files(pid, "0.1.0").await.unwrap()[0].1.clone();
         let sha2 = store.version_files(pid, "0.2.0").await.unwrap()[0].1.clone();
         assert!(store.blob_path(&sha1).exists());
         assert!(store.blob_path(&sha2).exists());
 
-        let (st, v) = delete(&app, "/api/packages/@dp_ui/button", Some(&admin)).await;
+        let (st, v) = delete(&app, "/api/packages/@oui/button", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK, "{v}");
-        assert_eq!(v["deleted"], "@dp_ui/button");
+        assert_eq!(v["deleted"], "@oui/button");
         assert_eq!(v["versions"], 2);
 
         // 行清理干净
-        assert!(store.package_id("@dp_ui", "button").await.unwrap().is_none());
+        assert!(store.package_id("@oui", "button").await.unwrap().is_none());
         assert!(store.versions_of(pid).await.unwrap().is_empty());
         assert!(store.version_files(pid, "0.1.0").await.unwrap().is_empty());
         // blob 全部回收
@@ -382,14 +382,14 @@ mod tests {
 
         // 读接口
         assert_eq!(
-            call(&app, "GET", "/v/@dp_ui/button", None, None).await.0,
+            call(&app, "GET", "/v/@oui/button", None, None).await.0,
             StatusCode::NOT_FOUND
         );
         let (_, idx) = call(&app, "GET", "/v/index.json", None, None).await;
         assert!(idx["packages"].as_array().unwrap().iter().all(|p| p["name"] != "button"));
 
         // 幂等删除 → 404
-        let (st, v) = delete(&app, "/api/packages/@dp_ui/button", Some(&admin)).await;
+        let (st, v) = delete(&app, "/api/packages/@oui/button", Some(&admin)).await;
         assert_eq!(st, StatusCode::NOT_FOUND);
         assert_eq!(v["error"], "package not found");
     }
@@ -399,35 +399,35 @@ mod tests {
         let (app, _dir, _store) = make_app().await;
         let admin = setup_admin(&app).await;
         assert_eq!(
-            publish(&app, pkg_body("@dp_ui/button", "0.1.0", b"x"), Some(ROOT_TOKEN)).await,
+            publish(&app, pkg_body("@oui/button", "0.1.0", b"x"), Some(ROOT_TOKEN)).await,
             StatusCode::CREATED
         );
 
         // 无会话 → 401
-        for uri in ["/api/packages/@dp_ui/button@0.1.0", "/api/packages/@dp_ui/button"] {
+        for uri in ["/api/packages/@oui/button@0.1.0", "/api/packages/@oui/button"] {
             let (st, v) = delete(&app, uri, None).await;
             assert_eq!(st, StatusCode::UNAUTHORIZED, "{uri}");
             assert_eq!(v["error"], "missing session token");
         }
         // 非法会话 → 401
-        let (st, v) = delete(&app, "/api/packages/@dp_ui/button@0.1.0", Some("dpui_sess_dead")).await;
+        let (st, v) = delete(&app, "/api/packages/@oui/button@0.1.0", Some("oui_sess_dead")).await;
         assert_eq!(st, StatusCode::UNAUTHORIZED);
         assert_eq!(v["error"], "invalid session");
 
         // 非 admin（publisher）→ 403，且包未被删除
         let dev = add_publisher(&app, &admin).await;
-        let (st, v) = delete(&app, "/api/packages/@dp_ui/button@0.1.0", Some(&dev)).await;
+        let (st, v) = delete(&app, "/api/packages/@oui/button@0.1.0", Some(&dev)).await;
         assert_eq!(st, StatusCode::FORBIDDEN);
         assert_eq!(v["error"], "admin required");
         assert_eq!(
-            call(&app, "GET", "/v/@dp_ui/button@0.1.0/manifest.json", None, None).await.0,
+            call(&app, "GET", "/v/@oui/button@0.1.0/manifest.json", None, None).await.0,
             StatusCode::OK
         );
-        let (st, _) = delete(&app, "/api/packages/@dp_ui/button", Some(&dev)).await;
+        let (st, _) = delete(&app, "/api/packages/@oui/button", Some(&dev)).await;
         assert_eq!(st, StatusCode::FORBIDDEN);
 
         // admin 会话 → 200
-        let (st, _) = delete(&app, "/api/packages/@dp_ui/button@0.1.0", Some(&admin)).await;
+        let (st, _) = delete(&app, "/api/packages/@oui/button@0.1.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK);
     }
 
@@ -437,14 +437,14 @@ mod tests {
         let admin = setup_admin(&app).await;
         // 两个版本的 dist/x.mjs 内容相同 → 同一 blob
         assert_eq!(
-            publish(&app, pkg_body("@dp_ui/button", "0.1.0", b"shared"), Some(ROOT_TOKEN)).await,
+            publish(&app, pkg_body("@oui/button", "0.1.0", b"shared"), Some(ROOT_TOKEN)).await,
             StatusCode::CREATED
         );
         assert_eq!(
-            publish(&app, pkg_body("@dp_ui/button", "0.2.0", b"shared"), Some(ROOT_TOKEN)).await,
+            publish(&app, pkg_body("@oui/button", "0.2.0", b"shared"), Some(ROOT_TOKEN)).await,
             StatusCode::CREATED
         );
-        let pid = store.package_id("@dp_ui", "button").await.unwrap().unwrap();
+        let pid = store.package_id("@oui", "button").await.unwrap().unwrap();
         let sha1 = store.version_files(pid, "0.1.0").await.unwrap()[0].1.clone();
         let sha2 = store.version_files(pid, "0.2.0").await.unwrap()[0].1.clone();
         assert_eq!(sha1, sha2);
@@ -453,18 +453,18 @@ mod tests {
         assert_eq!(store.blob_ref_count(&sha1).await.unwrap(), 2);
 
         // 删掉一个版本：blob 仍被另一版本引用 → 文件保留
-        let (st, _) = delete(&app, "/api/packages/@dp_ui/button@0.1.0", Some(&admin)).await;
+        let (st, _) = delete(&app, "/api/packages/@oui/button@0.1.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK);
         assert!(blob.exists(), "blob 仍被 0.2.0 引用，不得删除");
         assert_eq!(store.blob_ref_count(&sha1).await.unwrap(), 1);
         // 幸存版本仍可分发出该文件
         assert_eq!(
-            call(&app, "GET", "/v/@dp_ui/button@0.2.0/dist/x.mjs", None, None).await.0,
+            call(&app, "GET", "/v/@oui/button@0.2.0/dist/x.mjs", None, None).await.0,
             StatusCode::OK
         );
 
         // 删掉最后一个引用：blob 文件被回收
-        let (st, _) = delete(&app, "/api/packages/@dp_ui/button@0.2.0", Some(&admin)).await;
+        let (st, _) = delete(&app, "/api/packages/@oui/button@0.2.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK);
         assert!(!blob.exists(), "无 version_files 引用后 blob 应被删除");
         assert_eq!(store.blob_ref_count(&sha1).await.unwrap(), 0);
@@ -492,7 +492,7 @@ mod tests {
         assert!(v["error"].as_str().unwrap().contains("publish permission"), "{v}");
         // 伪造 / 缺失令牌
         assert_eq!(
-            publish(&app, pkg_body("@other/x", "1.3.0", b"d"), Some("dpui_deadbeef")).await,
+            publish(&app, pkg_body("@other/x", "1.3.0", b"d"), Some("oui_deadbeef")).await,
             StatusCode::UNAUTHORIZED
         );
         assert_eq!(
@@ -535,17 +535,17 @@ mod tests {
         let (app, dir, store) = make_app().await;
         let admin = setup_admin(&app).await;
         for (pkg, v) in [
-            ("@dp_ui/button", "0.1.0"),
-            ("@dp_ui/button", "0.2.0"),
-            ("@dp_ui/other", "1.0.0"),
+            ("@oui/button", "0.1.0"),
+            ("@oui/button", "0.2.0"),
+            ("@oui/other", "1.0.0"),
         ] {
             assert_eq!(
                 publish(&app, pkg_body(pkg, v, b"payload"), Some(ROOT_TOKEN)).await,
                 StatusCode::CREATED
             );
         }
-        let button_pid = store.package_id("@dp_ui", "button").await.unwrap().unwrap();
-        let other_pid = store.package_id("@dp_ui", "other").await.unwrap().unwrap();
+        let button_pid = store.package_id("@oui", "button").await.unwrap().unwrap();
+        let other_pid = store.package_id("@oui", "other").await.unwrap().unwrap();
         let db = open_db(&dir).await;
         let count = |sql: &str| {
             let db = db.clone();
@@ -582,7 +582,7 @@ mod tests {
             .unwrap();
 
         // 删一个版本（latest）→ 无孤儿 version_files、latest 不悬空且指向幸存版本
-        let (st, _) = delete(&app, "/api/packages/@dp_ui/button@0.2.0", Some(&admin)).await;
+        let (st, _) = delete(&app, "/api/packages/@oui/button@0.2.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK);
         assert_eq!(count(ORPHAN_FILES_SQL).await, 0);
         assert_eq!(count(DANGLING_LATEST_SQL).await, 0);
@@ -603,13 +603,13 @@ mod tests {
         assert_eq!(latest.as_deref(), Some("0.1.0"));
 
         // 删到无版本 → latest 置 NULL，仍无孤儿/悬空
-        let (st, _) = delete(&app, "/api/packages/@dp_ui/button@0.1.0", Some(&admin)).await;
+        let (st, _) = delete(&app, "/api/packages/@oui/button@0.1.0", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK);
         assert_eq!(count(ORPHAN_FILES_SQL).await, 0);
         assert_eq!(count(DANGLING_LATEST_SQL).await, 0);
 
         // 删整包 → 三张表都不含该 package_id；其它包不受影响
-        let (st, _) = delete(&app, "/api/packages/@dp_ui/button", Some(&admin)).await;
+        let (st, _) = delete(&app, "/api/packages/@oui/button", Some(&admin)).await;
         assert_eq!(st, StatusCode::OK);
         let rows: i64 = sqlx::query_scalar(
             "SELECT (SELECT COUNT(*) FROM version_files WHERE package_id = ?1) \

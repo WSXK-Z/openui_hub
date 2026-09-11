@@ -2,7 +2,7 @@
  * <HubRemote> —— 声明式运行时远程组件。
  *
  * ```vue
- * <HubRemote pkg="dpui-hub:@dp_ui/button" variant="primary" @click="onClick">保存</HubRemote>
+ * <HubRemote pkg="oui-hub:@oui/button" variant="primary" @click="onClick">保存</HubRemote>
  * ```
  *
  * - attrs（含事件/未声明 prop）与 slots（除保留名 loading/error）全部透传给远程组件；

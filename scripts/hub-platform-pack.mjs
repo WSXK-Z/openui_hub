@@ -1,5 +1,5 @@
 /**
- * 归集当前平台 dpui 二进制到单包 vendor/<os>-<arch>/。
+ * 归集当前平台 oui 二进制到单包 vendor/<os>-<arch>/。
  * 用法：node scripts/hub-platform-pack.mjs [--platform win32-x64|darwin-arm64|linux-x64|linux-arm64|darwin-x64]
  * 缺省按本机 platform/arch；其它平台由各自 CI 构建后调用本脚本并入同一包再发布。
  */
@@ -20,7 +20,7 @@ if (!SUPPORTED.includes(target)) {
   process.exit(1)
 }
 const isWin = target.startsWith('win32-')
-const binName = isWin ? 'dpui.exe' : 'dpui'
+const binName = isWin ? 'oui.exe' : 'oui'
 
 // 1) cargo release 构建（增量）
 const res = spawnSync('cargo', ['build', '--release'], {

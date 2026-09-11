@@ -1,29 +1,29 @@
 /**
- * hubPackage —— 组件开发者打包插件（读项目级综合配置 dpui.pkg.json）。
+ * hubPackage —— 组件开发者打包插件（读项目级综合配置 oui.json）。
  *
- * 配置是一个项目一份：公共段（cli 发布配置 / 默认 type / cssStrategy / peer / outDir）
+ * 配置是一个项目一份：公共段（连接 / 默认 type / cssStrategy / peer / outDir）
  * + 本项目全部组件的 manifest 条目 components[]。构建（一次 vite build 多入口）后，
  * 插件把每个登记的组件打成标准包：
  *   <pkgDir>/dist/<slug>.mjs + dist/style.css + manifest.json + source/** + [types/**]（types 与 dist 同级）
  * 其中 <pkgDir> = 组件条目 outDir（相对工程根）或 <cfg.outDir>/<name>@<version>
- * （name 取自 manifest，含 scope，如 pkg/@dp_ui/button@0.1.1；文件基名仍用 name 末段 slug）。
+ * （name 取自 manifest，含 scope，如 pkg/@oui/button@0.1.1；文件基名仍用 name 末段 slug）。
  *
  * `types`：组件条目可不写——插件按约定从 entry 推导声明路径（读 tsconfig.dts.json 的
- * rootDir/outDir，缺省 src / .dpui-hub/types；.ts/.tsx/.js → .d.ts，.mts → .d.mts，
+ * rootDir/outDir，缺省 src / .oui-hub/types；.ts/.tsx/.js → .d.ts，.mts → .d.mts，
  * .cts → .d.cts，.vue → .vue.d.ts），命中即把该声明所在目录整棵树的声明文件
  * （*.d.ts / *.d.mts / *.d.cts）复制到 <pkgDir>/types/（与 dist/ 同级），manifest 的 entry.types /
- * entry.typesFiles 记录之，供 `dpui use` 在消费端落盘精确类型。写字符串＝显式入口（缺失即
+ * entry.typesFiles 记录之，供 `oui use` 在消费端落盘精确类型。写字符串＝显式入口（缺失即
  * 构建失败），写 false＝显式不提供（不探测，消费端即 any）。
  *
- * dpui.pkg.json 结构：
+ * oui.json 结构：
  * ```json
  * {
- *   "cli": { "registry": "http://127.0.0.1:8787" },
+ *   "connection": ["default"],
  *   "type": "vue-component", "cssStrategy": "vanilla",
  *   "peer": { "vue": "^3.5.0" }, "outDir": "pkg",
  *   "uno": true,
  *   "components": [
- *     { "name": "@dp_ui/button", "version": "0.1.0", "entry": "src/ui/button/button.ts",
+ *     { "name": "@oui/button", "version": "0.1.0", "entry": "src/ui/button/button.ts",
  *       "description": "…", "type": "…", "cssStrategy": "…", "outDir": "…", "peer": {…} }
  *   ]
  * }
@@ -34,7 +34,7 @@
  * 具体值输出 → 远程自包含）。
  *
  * 用法（组件工程 vite.config）：`plugins: [vue(), hubPackage()]`
- * 产物由 `dpui publish` 直接消费；无需自定义构建脚本。
+ * 产物由 `oui publish` 直接消费；无需自定义构建脚本。
  */
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
@@ -44,8 +44,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { loadConfigFromFile, type Plugin, type UserConfig } from 'vite'
 
-const PKG_CONFIG_FILE = 'dpui.pkg.json'
-const BUILD_TMP = '.dpui-hub/.build'
+const PKG_CONFIG_FILE = 'oui.json'
+const BUILD_TMP = '.oui-hub/.build'
 /** 原子类提取时扫描的源码扩展名（组件工程 src 树）。 */
 const SCAN_EXTS = new Set(['ts', 'tsx', 'vue', 'js', 'jsx'])
 /** 声明产出目录名（包内，与 dist/ 同级）；manifest 的 entry.types 以此为前缀。 */
@@ -53,7 +53,7 @@ const PKG_TYPES_DIR = 'types'
 /** 声明产出的 tsconfig（组件工程约定）：rootDir/outDir 决定推导出的声明路径。 */
 const DTS_TSCONFIG = 'tsconfig.dts.json'
 const DTS_ROOT_DEFAULT = 'src'
-const DTS_OUT_DEFAULT = '.dpui-hub/types'
+const DTS_OUT_DEFAULT = '.oui-hub/types'
 /** 源码扩展名 → 声明扩展名（自动推导 types 时用；未列出＝不推导）。 */
 const DTS_EXT: Record<string, string> = {
   ts: '.d.ts',
@@ -66,8 +66,8 @@ const DTS_EXT: Record<string, string> = {
 
 /** 项目级综合配置（cli 公共段 + 默认 + 组件清单）。 */
 export interface HubPackageConfig {
-  /** CLI 公共配置（发布 registry 等） */
-  cli?: { registry?: string }
+  /** 项目选择的 hub 连接名（`oui init` 写入，可多个；首个为默认连接） */
+  connection?: string[]
   type?: string
   cssStrategy?: string
   peer?: Record<string, string>
@@ -113,19 +113,33 @@ function readJsonFile<T>(file: string): T | null {
   } catch {
     return null
   }
+
 }
 
-/** 包名末段作为文件基名与默认目录片段：@dp_ui/button → button */
+function readProjectConfig(file: string): HubPackageConfig | null {
+  const raw = readJsonFile<HubPackageConfig & { extends?: string }>(file)
+  if (!raw) return null
+  if (!raw.extends) return raw
+  const parent = readJsonFile<HubPackageConfig>(resolve(dirname(file), raw.extends))
+  if (!parent) throw new Error(`hubPackage: cannot load parent config ${raw.extends}`)
+  return {
+    ...parent,
+    ...raw,
+    components: raw.components ?? parent.components,
+  }
+}
+
+/** 包名末段作为文件基名与默认目录片段：@oui/button → button */
 function slugOf(name: string): string {
   const seg = name.split('/').pop() ?? name
   return seg || name
 }
 
-/** 遍历目录收集可扫描源码文件路径（忽略 node_modules/dist/.dpui-hub/pkg）。 */
+/** 遍历目录收集可扫描源码文件路径（忽略 node_modules/dist/.oui-hub/pkg）。 */
 function walkSources(dir: string, out: string[]): void {
   if (!existsSync(dir)) return
   for (const name of readdirSync(dir)) {
-    if (['node_modules', 'dist', '.dpui-hub', 'pkg', '.git'].includes(name)) continue
+    if (['node_modules', 'dist', '.oui-hub', 'pkg', '.git'].includes(name)) continue
     const p = join(dir, name)
     if (statSync(p).isDirectory()) {
       walkSources(p, out)
@@ -150,7 +164,7 @@ function collectDeclarations(base: string, dir = base, out: string[] = []): stri
 
 /**
  * 读 tsconfig.dts.json 的 rootDir/outDir；文件缺失、JSON.parse 失败或字段未声明 → 约定默认值
- * （src / .dpui-hub/types）。返回值形如 tsconfig 中所写，相对 cfgRoot。
+ * （src / .oui-hub/types）。返回值形如 tsconfig 中所写，相对 cfgRoot。
  */
 function dtsLayout(cfgRoot: string): { rootDir: string; outDir: string } {
   const tsconfig = readJsonFile<{ compilerOptions?: { rootDir?: string; outDir?: string } }>(
@@ -249,7 +263,7 @@ async function generateUnoCss(cfgRoot: string, warn: (m: string) => void): Promi
   return css
 }
 
-/** 从 `from` 向上找首个含 dpui.pkg.json 的目录；找不到回落 `from`（随后 loadConfig 会报错）。 */
+/** 从 `from` 向上找首个含 oui.json 的目录；找不到回落 `from`（随后 loadConfig 会报错）。 */
 function findPkgConfigDir(from: string): string {
   let dir = from
   for (;;) {
@@ -264,7 +278,8 @@ export function hubPackage(): Plugin {
   let cfgRoot = ''
 
   function loadConfig(root: string): HubPackageConfig {
-    const cfg = readJsonFile<HubPackageConfig>(join(root, PKG_CONFIG_FILE))
+    const selected = process.env.OUI_CONFIG?.trim() || PKG_CONFIG_FILE
+    const cfg = readProjectConfig(resolve(root, selected))
     if (!cfg || !Array.isArray(cfg.components) || cfg.components.length === 0) {
       throw new Error(
         `hubPackage: ${PKG_CONFIG_FILE} 缺少 components（本项目所有组件的清单，至少一项）。` +
@@ -287,7 +302,7 @@ export function hubPackage(): Plugin {
     const pkgJson = readJsonFile<PkgJsonLike>(join(cfgRoot, 'package.json')) ?? {}
     const peerMerged = { ...(pkgJson.peerDependencies ?? {}), ...peer }
     const slug = slugOf(c.name)
-    // 包目录名 = manifest 的 name + 版本（含 scope，如 pkg/@dp_ui/button@0.1.1），避免不同 scope 同名组件互相覆盖
+    // 包目录名 = manifest 的 name + 版本（含 scope，如 pkg/@oui/button@0.1.1），避免不同 scope 同名组件互相覆盖
     const outDir = c.outDir
       ? resolve(cfgRoot, c.outDir)
       : resolve(cfgRoot, cfg.outDir ?? 'pkg', `${c.name}@${c.version}`)
@@ -295,10 +310,10 @@ export function hubPackage(): Plugin {
   }
 
   return {
-    name: 'dpui-hub-package',
+    name: 'oui-hub-package',
 
     config(userConfig: UserConfig) {
-      // 工程根 = 含 dpui.pkg.json 的目录（从 vite root 向上找）；entry/source/outDir 相对它
+      // 工程根 = 含 oui.json 的目录（从 vite root 向上找）；entry/source/outDir 相对它
       cfgRoot = findPkgConfigDir(resolve(userConfig.root ?? process.cwd()))
       const cfg = loadConfig(cfgRoot)
 
@@ -367,7 +382,7 @@ export function hubPackage(): Plugin {
           const src = resolve(cfgRoot, rel)
           if (!existsSync(src) || !statSync(src).isFile()) {
             throw new Error(
-              `hubPackage: ${c.name} 的 source 路径不存在：${rel}（相对工程根；请在 dpui.pkg.json 补正）`,
+              `hubPackage: ${c.name} 的 source 路径不存在：${rel}（相对工程根；请在 oui.json 补正）`,
             )
           }
           const dst = join(outDir, 'source', rel)
@@ -403,7 +418,7 @@ export function hubPackage(): Plugin {
           const typesSrc = resolve(cfgRoot, typesSrcRel)
           if (!existsSync(typesSrc) || !statSync(typesSrc).isFile()) {
             throw new Error(
-              `hubPackage: ${c.name} 的 types 路径不存在：${typesSrcRel}（相对工程根；请在 dpui.pkg.json 补正）`,
+              `hubPackage: ${c.name} 的 types 路径不存在：${typesSrcRel}（相对工程根；请在 oui.json 补正）`,
             )
           }
           const typesBase = dirname(typesSrc)
@@ -443,7 +458,7 @@ export function hubPackage(): Plugin {
         console.log(`hubPackage: 已生成 ${c.name}@${c.version} → ${join(outDir, 'manifest.json')}`)
       }
 
-      rmSync(resolve(cfgRoot, '.dpui-hub'), { recursive: true, force: true })
+      rmSync(resolve(cfgRoot, '.oui-hub'), { recursive: true, force: true })
     },
   }
 }

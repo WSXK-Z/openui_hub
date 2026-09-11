@@ -199,7 +199,7 @@ const adminBtn =
         <button
           type="button"
           :class="btn"
-          title="复制构建期 CLI 添加命令（pnpm add -D @openui_hub/plugin_vite + dpui use …）"
+          title="复制构建期 CLI 添加命令（pnpm add -D @openui_hub/plugin_vite + oui use …）"
           @click="copy('cli')"
         >
           {{ feedback?.kind === 'cli' && feedback.ok ? '已复制' : '复制 CLI' }}

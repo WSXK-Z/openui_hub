@@ -1,11 +1,11 @@
 [package]
-name = "dpui-hub-cli"
+name = "oui-hub-cli"
 version = "0.1.0"
 edition = "2024"
-description = "openui_hub 本地终端工具 dpui：publish / use / list（Rust）"
+description = "openui_hub 本地终端工具 oui：publish / use / list（Rust）"
 
 [[bin]]
-name = "dpui"
+name = "oui"
 path = "src/main.rs"
 
 [dependencies]

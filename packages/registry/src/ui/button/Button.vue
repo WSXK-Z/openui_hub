@@ -12,8 +12,8 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>()
 
 <template>
   <button
-    class="dpui-btn"
-    :class="[`dpui-btn-${variant}`, `dpui-btn-${size}`]"
+    class="oui-btn"
+    :class="[`oui-btn-${variant}`, `oui-btn-${size}`]"
     :disabled="disabled"
     @click="emit('click', $event)"
   >
@@ -22,7 +22,7 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>()
 </template>
 
 <style scoped>
-.dpui-btn {
+.oui-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -38,47 +38,47 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>()
     border-color 0.15s ease,
     color 0.15s ease;
 }
-.dpui-btn:disabled {
+.oui-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.dpui-btn-primary {
+.oui-btn-primary {
   background: #2563eb;
   color: #fff;
 }
-.dpui-btn-primary:hover:not(:disabled) {
+.oui-btn-primary:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
-.dpui-btn-outline {
+.oui-btn-outline {
   background: transparent;
   border-color: #d1d5db;
   color: #1f2937;
 }
-.dpui-btn-outline:hover:not(:disabled) {
+.oui-btn-outline:hover:not(:disabled) {
   background: #f3f4f6;
 }
 
-.dpui-btn-ghost {
+.oui-btn-ghost {
   background: transparent;
   color: #1f2937;
 }
-.dpui-btn-ghost:hover:not(:disabled) {
+.oui-btn-ghost:hover:not(:disabled) {
   background: #f3f4f6;
 }
 
-.dpui-btn-sm {
+.oui-btn-sm {
   height: 28px;
   padding: 0 10px;
   font-size: 12px;
 }
-.dpui-btn-md {
+.oui-btn-md {
   height: 34px;
   padding: 0 14px;
   font-size: 14px;
 }
-.dpui-btn-lg {
+.oui-btn-lg {
   height: 42px;
   padding: 0 20px;
   font-size: 16px;

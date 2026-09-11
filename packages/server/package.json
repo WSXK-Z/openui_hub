@@ -5,7 +5,7 @@
   "description": "openui_hub 托管服务端（Rust/axum）：publish/分发/manifest 校验",
   "scripts": {
     "build": "cargo build --release",
-    "dev": "cargo run",
+    "dev": "cargo watch -x run",
     "test": "cargo test"
   }
 }

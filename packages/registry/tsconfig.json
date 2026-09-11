@@ -1,4 +1,4 @@
 {
   "files": [],
-  "references": [{ "path": "./tsconfig.dpui.json" }]
+  "references": [{ "path": "./tsconfig.oui.json" }]
 }
