@@ -31,4 +31,10 @@ export const Tag = defineComponent({
   },
 })
 
-export default Tag
+export default {
+  name: '@oui/tag',
+  title: 'Tag',
+  description: 'openui_hub 样例标签组件（UnoCSS 原子类）',
+  meta: {},
+  component: Tag,
+}

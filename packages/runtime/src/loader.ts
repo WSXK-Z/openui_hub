@@ -127,6 +127,42 @@ function resolvePkg(pkg: string | ResolvedPkg): ResolvedPkg {
   return typeof pkg === 'string' ? { moduleUrl: pkg } : pkg
 }
 
+/**
+ * hub 组件描述对象：远程模块入口（`index.ts`）的默认导出。
+ * `name` 为包名（@scope/name），`title`/`description`/`meta` 为展示与扩展元信息，
+ * `component` 为组件本体（SFC 的 default 或 defineComponent 返回值）。
+ */
+export interface HubComponentDescriptor {
+  name: string
+  title?: string
+  description?: string
+  meta?: Record<string, unknown>
+  component: Component
+}
+
+/**
+ * 从远程模块取组件本体：默认导出为描述对象时取 `component`；
+ * 否则将默认导出（或模块本身）当作组件。违反契约（描述对象缺 component）时抢出定位信息。
+ */
+export function unwrapHubComponent(mod: unknown): Component {
+  const dflt = (mod as { default?: unknown } | null | undefined)?.default ?? mod
+  if (dflt && typeof dflt === 'object' && 'component' in dflt) {
+    const comp = (dflt as { component?: Component }).component
+    if (!comp) {
+      throw new Error(
+        'openui_hub: 入口导出的描述对象缺少 component 字段（应默认导出 { name, title?, description?, meta?, component }）',
+      )
+    }
+    return comp
+  }
+  if (!dflt) {
+    throw new Error(
+      'openui_hub: 模块没有默认导出（应默认导出 { name, component, … } 描述对象）',
+    )
+  }
+  return dflt as Component
+}
+
 export interface LoadRemoteOptions {
   importMapOverrides?: Record<string, string>
   /**
@@ -136,7 +172,7 @@ export interface LoadRemoteOptions {
   cssRoot?: ShadowRoot | null
 }
 
-/** 加载远程组件：返回模块的 default 导出（Vue 组件定义）。 */
+/** 加载远程组件：返回入口描述对象里的 `component`（Vue 组件定义）。 */
 export async function loadRemote(
   pkg: string | ResolvedPkg,
   opts: LoadRemoteOptions = {},
@@ -146,9 +182,7 @@ export async function loadRemote(
   for (const url of resolved.cssUrls ?? []) injectCss(url, opts.cssRoot ?? null)
   let promise = moduleCache.get(resolved.moduleUrl)
   if (!promise) {
-    promise = import(/* @vite-ignore */ resolved.moduleUrl).then(
-      (mod: { default?: Component }) => mod.default ?? (mod as unknown as Component),
-    )
+    promise = import(/* @vite-ignore */ resolved.moduleUrl).then(unwrapHubComponent)
     moduleCache.set(resolved.moduleUrl, promise)
   }
   return (await promise) as Component

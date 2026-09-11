@@ -19,7 +19,8 @@
  *   用于丢弃「上一次 render」的迟到应答（版本切换竞态）。
  *
  * 内容走 `srcdoc`（不新增文件/路由）：iframe 文档里自带 import map + 引导脚本，
- * 引导脚本自己挂 `cssUrls` 的 `<link>`、`import(moduleUrl)`、`createApp(...).mount(...)`。
+ * 引导脚本自己挂 `cssUrls` 的 `<link>`、`import(moduleUrl)`、取入口默认导出描述对象的
+ * `component` 字段后 `createApp(...).mount(...)`。
  * Vue 模块 URL 由宿主给出（见下方 VUE_URL），iframe 内的引导脚本与远程模块因此共用
  * iframe 自己那一份 Vue 实例（不同 iframe / 与宿主 app 之间是彼此独立的实例）。
  *
@@ -119,7 +120,9 @@ body{display:flex;align-items:center;justify-content:center;font-family:system-u
     Promise.all([import('vue'), import(msg.moduleUrl)]).then(function (mods) {
       if (cur !== gen) return
       var Vue = mods[0]
-      var comp = mods[1].default || mods[1]
+      var desc = mods[1].default
+      var comp = (desc && typeof desc === 'object' && desc.component) ? desc.component : desc
+      if (!comp) { fail(token, '入口未默认导出组件描述对象（需含 component 字段）'); return }
       var label = msg.label == null ? '' : String(msg.label)
       app = Vue.createApp({
         render: function () { return Vue.h(comp, null, { default: function () { return label } }) },
@@ -233,31 +236,16 @@ onBeforeUnmount(() => {
 
 <template>
   <div v-if="pkg" class="relative h-full w-full">
-    <iframe
-      :key="nonce"
-      ref="iframeEl"
-      :srcdoc="SRCDOC"
-      sandbox="allow-scripts"
-      title="远程组件预览"
-      class="h-full w-full border-0"
-      @load="onFrameLoad"
-    />
-    <div
-      v-if="state !== 'ready'"
-      class="absolute inset-0 flex items-center justify-center bg-gray-50"
-    >
+    <iframe :key="nonce" ref="iframeEl" :srcdoc="SRCDOC" sandbox="allow-scripts" title="远程组件预览"
+      class="h-full w-full border-0" @load="onFrameLoad" />
+    <div v-if="state !== 'ready'" class="absolute inset-0 flex items-center justify-center bg-gray-50">
       <span v-if="state === 'loading'" class="text-xs text-gray-400">加载远程组件…</span>
       <span v-else class="flex w-full flex-col items-center gap-1 text-center">
-        <span
-          class="block max-h-8 w-full overflow-hidden break-words text-[11px] leading-4 text-red-500"
-          :title="`渲染失败：${errorMsg}`"
-        >渲染失败：{{ errorMsg }}</span>
-        <button
-          type="button"
-          data-no-nav
+        <span class="block max-h-8 w-full overflow-hidden break-words text-[11px] leading-4 text-red-500"
+          :title="`渲染失败：${errorMsg}`">渲染失败：{{ errorMsg }}</span>
+        <button type="button" data-no-nav
           class="pointer-events-auto shrink-0 rounded border border-red-200 px-2 py-0.5 text-[11px] leading-none text-red-600 hover:bg-red-50"
-          @click="retry"
-        >
+          @click="retry">
           重试
         </button>
       </span>
