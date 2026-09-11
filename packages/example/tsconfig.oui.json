@@ -2,7 +2,7 @@
   "include": ["src/**/*", "src/**/*.vue", "oui.d.ts"],
   "compilerOptions": {
     "paths": {
-      "oui-hub:@oui/button": ["./oui-types/@oui/button/index"]
+      "oui-hub:@oui/button": ["./node_modules/.hub-cache/types/@oui/button/index"]
     },
     "composite": true,
     "noEmit": true,
