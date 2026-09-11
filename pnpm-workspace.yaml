@@ -3,9 +3,7 @@ packages:
 
 allowBuilds:
   '@tsconfig/node24': true
-  '@types/jsdom': true
   '@types/node': true
-  '@unocss/preset-legacy-compat': true
   '@unocss/preset-tagify': true
   '@unocss/transformer-variant-group': true
   '@vitejs/plugin-vue': true
@@ -13,10 +11,6 @@ allowBuilds:
   '@vue/test-utils': true
   '@vue/tsconfig': true
   jsdom: true
-  lint-staged: true
-  npm-run-all2: true
-  oxfmt: true
-  oxlint: true
   reka-ui: true
   typescript: true
   unocss: true

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 
-import { DpTag } from '@dp_ui/core'
 import {
   AlertDialogCancel,
   AlertDialogContent,
@@ -22,6 +21,7 @@ import {
   type HubToken,
 } from '../api'
 import HubCheckbox from '../components/HubCheckbox.vue'
+import HubTag from '../components/HubTag.vue'
 
 const tokens = ref<HubToken[]>([])
 const loading = ref(true)
@@ -243,15 +243,15 @@ onMounted(() => load(true))
           <td class="px-3 py-2 font-mono">{{ t.name }}</td>
           <td class="px-3 py-2">
             <div class="flex flex-wrap gap-1">
-              <DpTag v-for="p in t.permissions" :key="p" type="info">{{ p }}</DpTag>
+              <HubTag v-for="p in t.permissions" :key="p" type="info">{{ p }}</HubTag>
             </div>
           </td>
           <td class="px-3 py-2">{{ t.username }}</td>
           <td class="px-3 py-2 text-gray-500">{{ formatTime(t.createdAt) }}</td>
           <td class="px-3 py-2 text-gray-500">{{ formatTime(t.lastUsedAt) }}</td>
           <td class="px-3 py-2">
-            <DpTag v-if="t.revokedAt" type="danger">已吊销</DpTag>
-            <DpTag v-else type="success">有效</DpTag>
+            <HubTag v-if="t.revokedAt" type="danger">已吊销</HubTag>
+            <HubTag v-else type="success">有效</HubTag>
           </td>
           <td class="px-3 py-2">
             <button

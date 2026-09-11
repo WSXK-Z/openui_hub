@@ -10,7 +10,6 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
-    "@dp_ui/core": "workspace:*",
     "@dp_ui/hub_runtime": "workspace:*",
     "reka-ui": "^2.10.1",
     "vue": "^3.5.40",

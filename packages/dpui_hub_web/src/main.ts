@@ -1,4 +1,4 @@
-import '@dp_ui/core/style.css'
+import './styles/index.css'
 import 'uno.css'
 
 import { createApp } from 'vue'

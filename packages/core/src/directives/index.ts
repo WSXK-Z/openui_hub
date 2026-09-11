@@ -1,1 +1,0 @@
-export { vAuth } from './auth'

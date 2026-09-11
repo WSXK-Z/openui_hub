@@ -9,11 +9,10 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DpTag } from '@dp_ui/core'
-
 import { cliAddCommand, remotePkgOf, type HubPackageItem, type HubVersionInfo } from '../api'
 import { useAuth } from '../composables/useAuth'
 import HubSelect from './HubSelect.vue'
+import HubTag from './HubTag.vue'
 import RemotePreview from './RemotePreview.vue'
 
 const props = defineProps<{ item: HubPackageItem; versions: HubVersionInfo[] | null }>()
@@ -146,7 +145,7 @@ const adminBtn =
       <div class="min-w-0 flex-1">
         <div class="flex h-6 min-w-0 items-center gap-2">
           <span class="min-w-0 truncate font-mono text-sm font-semibold text-gray-800">{{ displayName }}</span>
-          <DpTag v-if="isLatest" type="info">latest</DpTag>
+          <HubTag v-if="isLatest" type="info">latest</HubTag>
         </div>
         <p class="mt-1 h-4 truncate text-[11px] leading-4 text-gray-500">{{ item.description || '（无描述）' }}</p>
       </div>

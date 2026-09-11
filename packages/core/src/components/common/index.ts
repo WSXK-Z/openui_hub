@@ -1,6 +1,0 @@
-export * from './button'
-export * from './icon'
-export * from './tag'
-export * from './divider'
-export * from './card'
-export * from './avatar'
