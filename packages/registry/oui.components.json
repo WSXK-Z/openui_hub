@@ -9,6 +9,7 @@
         "src/ui/button/index.ts",
         "src/ui/button/Button.vue"
       ],
+      "types": true,
       "version": "0.1.1"
     }
   ]
