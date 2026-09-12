@@ -128,15 +128,23 @@ pub(crate) fn ref_tsconfig_content(
         (None, true) => format!("[\"src/**/*\", \"src/**/*.vue\", \"{TYPES_FILE}\"]"),
         (None, false) => format!("[\"{TYPES_FILE}\"]"),
     };
-    let decl = match decl_root {
-        Some(_) => format!(
-            "    \"declaration\": true,\n    \"emitDeclarationOnly\": true,\n    \"rootDir\": \"{src}\",\n    \"outDir\": \".oui-hub/types\",\n    \"strict\": true,\n"
+    // 声明产出形态的增量状态放进产出目录：随 .oui-hub 一起被构建清理，
+    // 避免「状态还在、产出已被删」时跳过产出导致声明缺失。
+    let (decl, build_info) = match decl_root {
+        Some(_) => (
+            format!(
+                "    \"declaration\": true,\n    \"emitDeclarationOnly\": true,\n    \"rootDir\": \"{src}\",\n    \"outDir\": \".oui-hub/types\",\n    \"strict\": true,\n"
+            ),
+            "    \"tsBuildInfoFile\": \".oui-hub/types/.tsbuildinfo\",\n",
         ),
-        None => "    \"noEmit\": true,\n".to_string(),
+        None => (
+            "    \"noEmit\": true,\n".to_string(),
+            "    \"tsBuildInfoFile\": \"./node_modules/.tmp/tsconfig.oui.tsbuildinfo\",\n",
+        ),
     };
     let paths = paths_block(paths);
     format!(
-        "{{\n  \"include\": {include},\n  \"compilerOptions\": {{\n{paths}{decl}    \"composite\": true,\n    \"tsBuildInfoFile\": \"./node_modules/.tmp/tsconfig.oui.tsbuildinfo\",\n    \"target\": \"ESNext\",\n    \"module\": \"ESNext\",\n    \"moduleResolution\": \"bundler\",\n    \"skipLibCheck\": true\n  }}\n}}\n"
+        "{{\n  \"include\": {include},\n  \"compilerOptions\": {{\n{paths}{decl}    \"composite\": true,\n{build_info}    \"target\": \"ESNext\",\n    \"module\": \"ESNext\",\n    \"moduleResolution\": \"bundler\",\n    \"skipLibCheck\": true\n  }}\n}}\n"
     )
 }
 

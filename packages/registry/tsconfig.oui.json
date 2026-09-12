@@ -7,7 +7,7 @@
     "outDir": ".oui-hub/types",
     "strict": true,
     "composite": true,
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.oui.tsbuildinfo",
+    "tsBuildInfoFile": ".oui-hub/types/.tsbuildinfo",
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
