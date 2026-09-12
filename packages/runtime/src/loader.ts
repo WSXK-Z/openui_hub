@@ -5,16 +5,20 @@
  * （按 **(注入目标, href)** 去重）→ `import(moduleUrl)`（模块级缓存）。远程预编译 ESM 内
  * `import "vue"` 由 import map 解析到宿主共享实例 —— 打包宿主请走 @openui_hub/plugin_vite 构建期插件。
  *
+ * 只知道 (registry, name[, version]) 时用 `resolveHubPkg` 查 hub 得到 `ResolvedPkg`（见其文档）。
+ *
  * 样式注入目标：缺省为 `document.head`（远程包的非作用域 CSS 会作用到整个宿主页面，
- * 历史行为）；传 `cssRoot: ShadowRoot` 时样式只进该 shadow —— 见 `<HubRemoteShadow>`。
+ * 历史行为）；传 `cssRoot: ShadowRoot` 时样式只进该 shadow —— 见 `<HubRemote>` 的 `isolate`。
  *
  * ensureImportMap 语义：
  * - 宿主页面已有 `<script type="importmap">`：解析其 `imports`（解析失败按空映射处理），
  *   只在缺少所需键时追加一张**仅含缺失键**的表；一个键都不缺时**不注入任何新表**。
  *   按 import map 规范后注册的表无法覆盖已有键，故**绝不覆盖宿主已有键**——`overrides`
  *   只作用于我们自己注入的键。这正是"宿主用自己实例的 vue + 我们兜底 reka-ui"的组合。
- * - 文档中没有 import map：注入含 `vue`、`reka-ui` 的默认表（`overrides` 可覆盖默认值）。
- * - 无论哪条路径都只处理一次（`importMapInstalled` 短路，含检测到宿主表的情形）。
+ * - `vue` 键：宿主表里没有时，用**宿主自己那份 vue**生成一个 blob 模块当目标（见 hostVueShim）——
+ *   远端模块因此用上与宿主同一份 vue（单实例）；拿不到宿主 vue 时退回默认表。
+ * - 文档中没有 import map：注入含 `vue`、`reka-ui` 的表（`overrides` 可覆盖默认值）。
+ * - 无论哪条路径都只安装一次：并发调用共用同一个 promise，都会等到表就绪后才去 import 远端模块。
  *
  * v1 注明：动态追加 importmap 在浏览器中只影响其后的模块解析，此处以等待一帧近似；
  * 稳妥做法是宿主页面静态注入 import map。
@@ -26,6 +30,7 @@ export interface ResolvedPkg {
   version?: string
   moduleUrl: string
   cssUrls?: string[]
+  /** 该包 peer 依赖的模块映射（`manifest.peer`），用作 import map 的兜底键。 */
   peer?: Record<string, string>
 }
 
@@ -39,7 +44,7 @@ export const DEFAULT_IMPORT_MAP: Record<string, string> = {
   'reka-ui': 'https://esm.sh/reka-ui@2.10.1',
 }
 
-let importMapInstalled = false
+let importMapReady: Promise<void> | null = null
 /** 样式表去重：按「注入目标（document 或某个 shadow root）+ href」记 —— 同一 shadow 只注入一次，不同 shadow 各持一份（样式不跨 shadow 生效）。 */
 const cssInjected = new WeakMap<ShadowRoot | Document, Set<string>>()
 const moduleCache = new Map<string, Promise<unknown>>()
@@ -75,19 +80,25 @@ function appendImportMap(imports: Record<string, string>): void {
  * 幂等写入 import map：宿主已有表时只补缺失键且不覆盖其已有键；无表时注入默认表。
  * 见文件头注释的语义说明。
  */
-export async function ensureImportMap(
-  overrides: Record<string, string> = {},
-): Promise<void> {
-  if (importMapInstalled || typeof document === 'undefined') return
-  // 先置标志：并发调用下同步段内即完成短路
-  importMapInstalled = true
+export function ensureImportMap(overrides: Record<string, string> = {}): Promise<void> {
+  if (typeof document === 'undefined') return Promise.resolve()
+  // 首次调用的内容即最终内容；并发调用拿到同一个 promise，都会等到表就绪
+  if (!importMapReady) importMapReady = installImportMap(overrides)
+  return importMapReady
+}
 
-  const wanted = { ...DEFAULT_IMPORT_MAP, ...overrides }
+async function installImportMap(overrides: Record<string, string>): Promise<void> {
   const hasHostMap = document.querySelector('script[type="importmap"]') !== null
+  const hostImports = hasHostMap ? collectHostImports() : {}
+  const wanted = { ...DEFAULT_IMPORT_MAP, ...overrides }
+  // 宿主自己提供 vue 就不动它；否则优先用宿主 vue 生成的 shim，最后才退回默认表
+  if (!('vue' in overrides) && !('vue' in hostImports)) {
+    const shim = await hostVueShim()
+    if (shim) wanted['vue'] = shim
+  }
 
   if (hasHostMap) {
     // 宿主已有表：按规范后注册无法覆盖已有键，只能补缺失键
-    const hostImports = collectHostImports()
     const missing: Record<string, string> = {}
     for (const [key, value] of Object.entries(wanted)) {
       if (!(key in hostImports)) missing[key] = value
@@ -99,6 +110,37 @@ export async function ensureImportMap(
   }
   // 近似等待一帧，允许动态 importmap 生效（v1 约定，见文件头注释）
   await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
+/** 存放宿主 vue 命名空间的全局键：blob 模块取不到闭包，只能经全局拿。 */
+const HOST_VUE_KEY = '__oui_hub_vue__'
+/** 宿主 vue 的 blob shim（一个会话只生成一份）。 */
+let hostVueShimUrl: Promise<string | null> | null = null
+
+/**
+ * 用宿主自己那份 vue 生成一个 blob 模块（`export const ref = m.ref; …`），供 import map 把 `vue`
+ * 指过去：远端模块的裸 `import "vue"` 因此拿到宿主 vue 的**同一批函数对象**（两份 vue 共存会在渲染期
+ * 直接崩，响应式与依赖注入也互不相通）。宿主无可解析的 vue（非打包页面、未装 vue）时返回 null。
+ */
+function hostVueShim(): Promise<string | null> {
+  if (hostVueShimUrl) return hostVueShimUrl
+  hostVueShimUrl = (async () => {
+    if (typeof Blob === 'undefined' || typeof URL?.createObjectURL !== 'function') return null
+    try {
+      const ns = (await import('vue')) as Record<string, unknown>
+      const lines = [`const m = globalThis[${JSON.stringify(HOST_VUE_KEY)}];`]
+      for (const name of Object.keys(ns)) {
+        // default 与非标识符名跳过：远端组件用的是具名导出
+        if (name === 'default' || !/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name)) continue
+        lines.push(`export const ${name} = m[${JSON.stringify(name)}];`)
+      }
+      ;(globalThis as Record<string, unknown>)[HOST_VUE_KEY] = ns
+      return URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/javascript' }))
+    } catch {
+      return null
+    }
+  })()
+  return hostVueShimUrl
 }
 
 /**
@@ -125,6 +167,65 @@ function injectCss(href: string, root?: ShadowRoot | null): void {
 
 function resolvePkg(pkg: string | ResolvedPkg): ResolvedPkg {
   return typeof pkg === 'string' ? { moduleUrl: pkg } : pkg
+}
+
+/** `manifest.json` 中本 loader 读取的字段（发布时写入，见 server 的 `manifest.rs`）。 */
+interface HubManifest {
+  entry?: { module?: string; css?: string[] }
+  peer?: Record<string, string>
+}
+
+/** hub 上的包定位：`registry` 为 hub 地址，`name` 形如 `@scope/name`。 */
+export interface HubRef {
+  registry: string
+  name: string
+  /** 省略时取该包在 hub 上的最新版本。 */
+  version?: string
+}
+
+/** 去掉地址末尾的 `/`，避免拼出 `//` 路径。 */
+function trimTrailingSlash(url: string): string {
+  return url.replace(/\/+$/, '')
+}
+
+/** 该包在 hub 上的最新版本（公开接口 `/resolve/<name>`）。 */
+async function latestVersion(registry: string, name: string): Promise<string> {
+  const url = `${registry}/resolve/${name}`
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`oui-hub: 解析 ${name} 的最新版本失败（HTTP ${res.status}）：${url}`)
+  }
+  const data = (await res.json()) as { version?: string }
+  if (!data.version) throw new Error(`oui-hub: ${url} 未返回 version 字段`)
+  return data.version
+}
+
+/**
+ * 把 hub 上的包解析成可直接加载的 `ResolvedPkg`。
+ * 版本省略时先查 `/resolve/<name>` 拿最新版本，再取该版本的 `manifest.json`；
+ * module/css/peer 一律以 manifest 为准，消费端不猜产物路径。
+ */
+export async function resolveHubPkg(ref: HubRef): Promise<ResolvedPkg> {
+  const registry = trimTrailingSlash(ref.registry)
+  if (!registry) throw new Error('oui-hub: 缺少 registry（hub 地址）')
+  if (!ref.name) throw new Error('oui-hub: 缺少 name（形如 @scope/name）')
+  const version = ref.version ?? (await latestVersion(registry, ref.name))
+  const base = `${registry}/v/${ref.name}@${version}`
+  const res = await fetch(`${base}/manifest.json`)
+  if (!res.ok) {
+    throw new Error(`oui-hub: manifest 取不到（HTTP ${res.status}）：${base}/manifest.json`)
+  }
+  const manifest = (await res.json()) as HubManifest
+  const modulePath = manifest.entry?.module
+  if (!modulePath) {
+    throw new Error(`oui-hub: ${ref.name}@${version} 的 manifest 未声明 entry.module`)
+  }
+  return {
+    version,
+    moduleUrl: `${base}/${modulePath}`,
+    cssUrls: (manifest.entry?.css ?? []).map((path) => `${base}/${path}`),
+    peer: manifest.peer,
+  }
 }
 
 /**
@@ -178,7 +279,8 @@ export async function loadRemote(
   opts: LoadRemoteOptions = {},
 ): Promise<Component> {
   const resolved = resolvePkg(pkg)
-  await ensureImportMap(opts.importMapOverrides)
+  // 远程包 manifest 里的 peer 声明（如 reka-ui 版本）作为 import map 兜底：缺键按它取，显式 overrides 优先
+  await ensureImportMap({ ...resolved.peer, ...opts.importMapOverrides })
   for (const url of resolved.cssUrls ?? []) injectCss(url, opts.cssRoot ?? null)
   let promise = moduleCache.get(resolved.moduleUrl)
   if (!promise) {
