@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@openui_hub/cli": "workspace:*",
-    "@openui_hub/plugin_vite": "workspace:*"
+    "@openui_hub/plugin_vite": "workspace:*",
+    "@openui_hub/runtime": "workspace:*"
   },
   "engines": {
     "node": "^22.18.0 || >=24.12.0"

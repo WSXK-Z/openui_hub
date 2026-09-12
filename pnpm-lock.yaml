@@ -73,6 +73,9 @@ importers:
       '@openui_hub/plugin_vite':
         specifier: workspace:*
         version: link:../plugin_vite
+      '@openui_hub/runtime':
+        specifier: workspace:*
+        version: link:../runtime
 
   packages/plugin_vite:
     dependencies:
