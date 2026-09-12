@@ -65,7 +65,10 @@ const installText = computed(() => {
     `import { Button } from 'oui-hub:${n}'`,
     ``,
     `# 运行期（HubRemote）`,
-    `<HubRemote :pkg="'${resolveInfo.value?.moduleUrl ?? ''}'" />`,
+    // 版本未解析出来时省略 version（该 prop 省略即取 hub 上该包的最新版本）
+    resolveInfo.value
+      ? `<HubRemote registry="${HUB_URL}" name="${n}" version="${resolveInfo.value.version}" />`
+      : `<HubRemote registry="${HUB_URL}" name="${n}" />`,
   ]
   return lines.join('\n')
 })
