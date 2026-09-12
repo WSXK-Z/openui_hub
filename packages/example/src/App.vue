@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 远程组件：由 hubVite 插件在构建期解析 oui.lock.json 并从 hub 拉取
 import { Button } from 'oui-hub:@test/button'
+import { Button as Button1 } from 'oui-hub:@test/button@0.1.2'
 </script>
 
 <template>
@@ -9,5 +10,8 @@ import { Button } from 'oui-hub:@test/button'
     <Button variant="ghost" size="lg" @click="console.log('clicked remote button')">
       远程按钮
     </Button>
+    <Button1 variant="ghost" size="lg" @click="console.log('clicked remote button1')">
+      远程按钮1
+    </Button1>
   </main>
 </template>
