@@ -6,7 +6,7 @@
   "description": "openui_hub 官方组件真源：样例组件构建为可发布包（manifest + dist）",
   "scripts": {
     "prebuild": "pnpm --filter @openui_hub/plugin_vite build",
-    "build": "vue-tsc -p tsconfig.dts.json && vite build"
+    "build": "vue-tsc -p tsconfig.oui.json && vite build"
   },
   "devDependencies": {
     "@openui_hub/cli": "workspace:*",

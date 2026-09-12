@@ -1,8 +1,12 @@
 {
-  "include": ["src/**/*", "src/**/*.vue", "oui.d.ts"],
+  "include": ["src/**/*.ts", "src/**/*.vue", "oui.d.ts"],
   "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "src",
+    "outDir": ".oui-hub/types",
+    "strict": true,
     "composite": true,
-    "noEmit": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.oui.tsbuildinfo",
     "target": "ESNext",
     "module": "ESNext",
