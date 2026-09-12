@@ -52,7 +52,7 @@ impl CreateArgs {
 
 /// `oui create <@scope/name>`：按 hub 组件契约生成 `<dir>/index.ts`（默认导出描述对象
 /// `{ name, title, description, meta, component }`，并具名导出组件本体）与 `<dir>/<Slug>.vue`；
-/// 默认登记进 `oui.components.json`，并补齐组件声明产出链路（tsconfig.dts.json / build 前置）。
+/// 默认登记进 `oui.components.json`，并补齐组件声明产出链路（并入 `tsconfig.oui.json` / build 前置）。
 pub(crate) fn cmd_create(args: CreateArgs) -> Result<()> {
     let name = args.pkg.trim();
     if !is_scoped_name(name) {

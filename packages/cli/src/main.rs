@@ -208,7 +208,7 @@ enum Cmd {
         /// 组件级包输出目录覆盖（默认 <outDir>/<name>@<version>）
         #[arg(long)]
         out_dir: Option<String>,
-        /// 组件类型声明：省略＝按 tsconfig.dts.json 自动推导；`false`＝显式关闭（消费端 any）；
+        /// 组件类型声明：省略＝按 tsconfig.oui.json 自动推导；`false`＝显式关闭（消费端 any）；
         /// `<路径>`＝显式入口（相对工程根，缺失即构建失败）；空串＝清除该字段（回到自动推导）
         #[arg(long)]
         types: Option<String>,

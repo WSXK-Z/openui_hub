@@ -19,8 +19,6 @@ pub(crate) const LOCK_FILE: &str = "oui.lock.json";
 /// 与构建期模块缓存同根（`node_modules/.hub-cache`），工程目录因此不产生额外文件、无需忽略配置；
 /// 映射值不随版本变化，故 tsconfig 的 paths 只需插入、无需改写（用户 tsconfig 里的 JSONC 原样保留）。
 pub(crate) const TYPES_DIR: &str = "node_modules/.hub-cache/types";
-/// 组件工程产出类型声明的独立 tsconfig（只出 .d.ts，JS 由 vite 负责）。
-pub(crate) const DTS_TSCONFIG: &str = "tsconfig.dts.json";
 
 pub(crate) const PKG_CONFIG: &str = "oui.json";
 /// 纳入 hub 的组件清单（组件开发者）。
@@ -98,7 +96,7 @@ pub(crate) struct PkgComponent {
     #[serde(default)]
     pub(crate) source: Option<Vec<String>>,
     /// 类型声明：字符串＝显式入口（相对工程根；hubPackage 复制其所在目录到包内 types/，与 dist/ 同级）；
-    /// false＝显式不提供（消费端 any）；缺省＝由 hubPackage 按 tsconfig.dts.json 自动推导；
+    /// false＝显式不提供（消费端 any）；缺省＝由 hubPackage 按 tsconfig.oui.json 自动推导；
     /// 其它取值（true/对象）＝未关闭，按缺省处理。
     #[serde(default)]
     pub(crate) types: Option<Value>,

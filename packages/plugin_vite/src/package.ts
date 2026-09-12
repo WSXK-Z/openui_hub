@@ -9,7 +9,7 @@
  * 其中 <pkgDir> = 组件条目 outDir（相对工程根）或 <cfg.outDir>/<name>@<version>
  * （name 取自 manifest，含 scope，如 pkg/@oui/button@0.1.1；文件基名仍用 name 末段 slug）。
  *
- * `types`：组件条目可不写——插件按约定从 entry 推导声明路径（读 tsconfig.dts.json 的
+ * `types`：组件条目可不写——插件按约定从 entry 推导声明路径（读 tsconfig.oui.json 的
  * rootDir/outDir，缺省 src / .oui-hub/types；.ts/.tsx/.js → .d.ts，.mts → .d.mts，
  * .cts → .d.cts，.vue → .vue.d.ts），命中即把该声明所在目录整棵树的声明文件
  * （*.d.ts / *.d.mts / *.d.cts）复制到 <pkgDir>/types/（与 dist/ 同级），manifest 的 entry.types /
@@ -60,7 +60,7 @@ const SCAN_EXTS = new Set(['ts', 'tsx', 'vue', 'js', 'jsx'])
 /** 声明产出目录名（包内，与 dist/ 同级）；manifest 的 entry.types 以此为前缀。 */
 const PKG_TYPES_DIR = 'types'
 /** 声明产出的 tsconfig（组件工程约定）：rootDir/outDir 决定推导出的声明路径。 */
-const DTS_TSCONFIG = 'tsconfig.dts.json'
+const OUI_TSCONFIG = 'tsconfig.oui.json'
 const DTS_ROOT_DEFAULT = 'src'
 const DTS_OUT_DEFAULT = '.oui-hub/types'
 /** 源码扩展名 → 声明扩展名（自动推导 types 时用；未列出＝不推导）。 */
@@ -112,7 +112,7 @@ export interface HubComponentConfig {
   source?: string[]
   /**
    * 类型声明：字符串＝显式入口（相对工程根，所在目录整棵树的声明复制进 <pkgDir>/types/）；
-   * false＝显式不提供；缺省＝按 tsconfig.dts.json 的 rootDir/outDir 从 entry 推导
+   * false＝显式不提供；缺省＝按 tsconfig.oui.json 的 rootDir/outDir 从 entry 推导
    */
   types?: string | false
 }
@@ -155,12 +155,12 @@ function collectDeclarations(base: string, dir = base, out: string[] = []): stri
 }
 
 /**
- * 读 tsconfig.dts.json 的 rootDir/outDir；文件缺失、JSON.parse 失败或字段未声明 → 约定默认值
+ * 读 tsconfig.oui.json 的 rootDir/outDir；文件缺失、JSON.parse 失败或字段未声明 → 约定默认值
  * （src / .oui-hub/types）。返回值形如 tsconfig 中所写，相对 cfgRoot。
  */
 function dtsLayout(cfgRoot: string): { rootDir: string; outDir: string } {
   const tsconfig = readJsonFile<{ compilerOptions?: { rootDir?: string; outDir?: string } }>(
-    join(cfgRoot, DTS_TSCONFIG),
+    join(cfgRoot, OUI_TSCONFIG),
   )
   const opts = tsconfig?.compilerOptions ?? {}
   const rootDir = typeof opts.rootDir === 'string' && opts.rootDir ? opts.rootDir : DTS_ROOT_DEFAULT
@@ -169,7 +169,7 @@ function dtsLayout(cfgRoot: string): { rootDir: string; outDir: string } {
 }
 
 /**
- * 按 tsconfig.dts.json 的 rootDir/outDir 从源码入口推导声明路径（相对 cfgRoot 的正斜杠路径；
+ * 按 tsconfig.oui.json 的 rootDir/outDir 从源码入口推导声明路径（相对 cfgRoot 的正斜杠路径；
  * 不检查文件是否存在）。入口不在 rootDir 内、无扩展名或扩展名不在 DTS_EXT 内 → null。
  */
 function inferTypesEntry(cfgRoot: string, entryRel: string): string | null {
@@ -398,7 +398,7 @@ export function hubPackage(): Plugin {
           } else {
             console.log(
               `hubPackage: ${c.name} 未找到类型声明（期望 ${
-                inferred ?? `按 tsconfig.dts.json 从 entry ${c.entry} 推导（不在 rootDir 内或扩展名不支持）`
+                inferred ?? `按 tsconfig.oui.json 从 entry ${c.entry} 推导（不在 rootDir 内或扩展名不支持）`
               }）；如需关闭此探测请设 "types": false`,
             )
           }

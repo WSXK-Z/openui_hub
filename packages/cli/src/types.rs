@@ -10,7 +10,7 @@ use std::{
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 
-use crate::config::{LockFile, TYPES_DIR};
+use crate::config::{read_components, types_disabled, LockFile, TYPES_DIR};
 use crate::decl::has_vue_files;
 use crate::style;
 use crate::text::{find_key, insert_into_array, insert_into_object, skip_ws, write_if_changed};
@@ -103,7 +103,8 @@ pub(crate) enum TypesEdit {
 /// 工程根的类型入口文件：内容转发 @openui_hub/plugin_vite 的声明（声明真源在该包内）。
 pub(crate) const TYPES_FILE: &str = "oui.d.ts";
 pub(crate) const MAIN_TSCONFIG: &str = "tsconfig.json";
-/// references 模式下被 tsconfig.json 引用的独立工程文件。
+/// references 模式下被 tsconfig.json 引用的独立工程文件：承载类型声明，工程需要产出组件声明时
+/// 同时承担声明产出的编译（.oui-hub/types/）。
 pub(crate) const REF_TSCONFIG: &str = "tsconfig.oui.json";
 /// references 模式下「编译源码」的工程文件（solution-style 必须有工程包含源码）。
 pub(crate) const APP_TSCONFIG: &str = "tsconfig.app.json";
@@ -115,16 +116,38 @@ pub(crate) fn types_file_content() -> String {
 
 /// Generated type references for tsconfig.
 /// （声明必须与源码同 Program，否则源码落进编辑器的 inferred project 看不到声明）。
-pub(crate) fn ref_tsconfig_content(with_sources: bool, paths: &BTreeMap<String, String>) -> String {
-    let include = if with_sources {
-        "[\"src/**/*\", \"src/**/*.vue\", \"oui.d.ts\"]"
-    } else {
-        "[\"oui.d.ts\"]"
+/// `decl_root` 为 `Some` 时该工程同时承担组件声明产出：收录源码 + 产出 `.oui-hub/types/` 下的 `.d.ts`。
+pub(crate) fn ref_tsconfig_content(
+    with_sources: bool,
+    paths: &BTreeMap<String, String>,
+    decl_root: Option<&str>,
+) -> String {
+    let src = decl_root.map(|d| d.to_string()).unwrap_or_else(|| "src".to_string());
+    let include = match (decl_root, with_sources) {
+        (Some(_), _) => format!("[\"{src}/**/*.ts\", \"{src}/**/*.vue\", \"{TYPES_FILE}\"]"),
+        (None, true) => format!("[\"src/**/*\", \"src/**/*.vue\", \"{TYPES_FILE}\"]"),
+        (None, false) => format!("[\"{TYPES_FILE}\"]"),
+    };
+    let decl = match decl_root {
+        Some(_) => format!(
+            "    \"declaration\": true,\n    \"emitDeclarationOnly\": true,\n    \"rootDir\": \"{src}\",\n    \"outDir\": \".oui-hub/types\",\n    \"strict\": true,\n"
+        ),
+        None => "    \"noEmit\": true,\n".to_string(),
     };
     let paths = paths_block(paths);
     format!(
-        "{{\n  \"include\": {include},\n  \"compilerOptions\": {{\n{paths}    \"composite\": true,\n    \"noEmit\": true,\n    \"tsBuildInfoFile\": \"./node_modules/.tmp/tsconfig.oui.tsbuildinfo\",\n    \"target\": \"ESNext\",\n    \"module\": \"ESNext\",\n    \"moduleResolution\": \"bundler\",\n    \"skipLibCheck\": true\n  }}\n}}\n"
+        "{{\n  \"include\": {include},\n  \"compilerOptions\": {{\n{paths}{decl}    \"composite\": true,\n    \"tsBuildInfoFile\": \"./node_modules/.tmp/tsconfig.oui.tsbuildinfo\",\n    \"target\": \"ESNext\",\n    \"module\": \"ESNext\",\n    \"moduleResolution\": \"bundler\",\n    \"skipLibCheck\": true\n  }}\n}}\n"
     )
+}
+
+/// 工程需要产出组件声明时返回源码根（相对工程根；工程根即 `src` 之外的目录时为该目录名）。
+/// 判定：`oui.components.json` 里有未显式 `types: false` 的条目。
+fn decl_root_of(root: &Path) -> Option<String> {
+    let components = read_components(root);
+    if components.is_empty() || components.iter().all(|c| c.types.as_ref().is_some_and(types_disabled)) {
+        return None;
+    }
+    Some(crate::decl::decl_root_rel(root, &components))
 }
 
 /// 工程内已有的、覆盖源码的工程配置（如 create-vue 的 tsconfig.app.json）。
@@ -454,21 +477,24 @@ pub(crate) fn configure_types(root: &Path) -> TypesEdit {
             }
         }
 
-        // (b) tsconfig.oui.json 承载声明；若工程里没有别的"含源码"的工程，连源码一起放进它
-        //     （声明必须与源码同 Program：否则源码会落进编辑器的 inferred project 而看不到声明）
+        // (b) tsconfig.oui.json 承载声明与（需要时）声明产出；若工程里没有别的"含源码"的工程，
+        //     连源码一起放进它（声明必须与源码同 Program：否则源码会落进编辑器的 inferred project 而看不到声明）
         let source_project = source_project_covering_src(root);
+        let decl_root = decl_root_of(root);
         let with_sources = source_project.is_none();
-        match write_if_changed(&ref_cfg, &ref_tsconfig_content(with_sources, &paths)) {
-            Ok(true) => written.push(ref_cfg.clone()),
+        match write_if_changed(&ref_cfg, &ref_tsconfig_content(with_sources, &paths, decl_root.as_deref())) {
+            Ok(true) => {
+                written.push(ref_cfg.clone());
+                if with_sources && has_vue_files(&root.join("src"), 0) {
+                    style::out(format!(
+                        "{}工程含 .vue，类型检查请用 {}",
+                        style::warn("提示："),
+                        style::accent(format!("`vue-tsc -p {REF_TSCONFIG}`"))
+                    ));
+                }
+            }
             Ok(false) => {}
             Err(()) => return TypesEdit::Manual(ref_cfg),
-        }
-        if with_sources && has_vue_files(&root.join("src"), 0) {
-            style::out(format!(
-                "{}工程含 .vue，类型检查请用 {}",
-                style::warn("提示："),
-                style::accent(format!("`vue-tsc -p {REF_TSCONFIG}`"))
-            ));
         }
 
         // (c) 若已有独立源码工程（如 create-vue 的 tsconfig.app.json）→ oui.d.ts 与 paths 都登记进它
@@ -536,6 +562,15 @@ pub(crate) fn configure_types(root: &Path) -> TypesEdit {
         TypesEdit::Already(dts)
     } else {
         TypesEdit::Written(written)
+    }
+}
+
+/// 确保类型接入就绪；只在发生写入或需人工介入时输出（供 `oui create` 等无交互路径复用）。
+pub(crate) fn ensure_types(root: &Path) {
+    match configure_types(root) {
+        TypesEdit::Written(files) => report_types(&TypesEdit::Written(files)),
+        TypesEdit::Manual(p) => report_types(&TypesEdit::Manual(p)),
+        TypesEdit::Already(_) => {}
     }
 }
 

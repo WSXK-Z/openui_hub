@@ -12,7 +12,7 @@ use crate::vscode::fix_vscode_settings;
 /// `oui fix`：在 oui.json 所在工程根检查并修复
 /// 1) 声明缓存（node_modules/.hub-cache/types）：缺失则按 lock 的版本从 hub 重新拉取并重建转发入口；
 /// 2) 类型接入（oui.d.ts + tsconfig 引用/登记 + 有类型包的 paths 映射，含过期映射值校正）；
-/// 3) 组件工程（oui.components.json 里未显式关闭类型的条目）的声明产出链路：补 tsconfig.dts.json 与 build 脚本前置；
+/// 3) 组件工程（oui.components.json 里未显式关闭类型的条目）的声明产出链路：并入 tsconfig.oui.json 与 build 脚本前置；
 /// 4) .vscode/settings.json 的 explorer.fileNesting（开启 + 折叠 oui 相关文件）。
 pub(crate) async fn cmd_fix(registry: &Option<String>) -> Result<()> {
     let cwd = std::env::current_dir()?;

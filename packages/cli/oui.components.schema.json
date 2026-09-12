@@ -73,7 +73,7 @@
                     }
                 },
                 "types": {
-                    "description": "类型声明：字符串＝显式入口；false＝不提供；缺省＝按 tsconfig.dts.json 推导。",
+                    "description": "类型声明：字符串＝显式入口；false＝不提供；缺省＝按 tsconfig.oui.json 推导。",
                     "oneOf": [
                         {
                             "type": "boolean"

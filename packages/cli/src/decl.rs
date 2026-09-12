@@ -1,4 +1,4 @@
-//! 组件工程声明产出链路：`tsconfig.dts.json` 生成、build 脚本前置与 vue-tsc/tsc 选择。
+//! 组件工程声明产出链路：产出配置（并入 `tsconfig.oui.json`）、build 脚本前置与 vue-tsc/tsc 选择。
 
 use std::{
     fs,
@@ -7,13 +7,18 @@ use std::{
 
 use anyhow::{Context, Result};
 
-use crate::config::{read_components, types_disabled, PkgComponent, DTS_TSCONFIG};
+use crate::config::{read_components, types_disabled, PkgComponent};
 use crate::style;
 use crate::text::{json_string_value, replace_json_string_value};
+use crate::types::{ensure_types, REF_TSCONFIG};
 
-/// 组件工程（oui.json 的 components 里有未显式关闭类型的条目）的声明产出链路修复：
-/// 1) 缺 `tsconfig.dts.json` → 按工程布局生成（只产 .d.ts，输出到 .oui-hub/types/，随构建临时区清理）；
-/// 2) package.json 的 build 脚本缺声明前置 → 补上（.vue 用 vue-tsc，纯 TS 用 tsc）。
+/// 合并前 CLI 单独生成的声明产出配置（内容一致才视为 CLI 生成的旧文件）。
+const STANDALONE_DECL_TSCONFIG: &str = "tsconfig.dts.json";
+
+/// 组件工程（`oui.components.json` 里有未显式关闭类型的条目）的声明产出链路修复：
+/// 1) 产出配置并入 `tsconfig.oui.json`（与该工程的类型接入共用一个工程配置）；
+/// 2) 旧版单独的 `tsconfig.dts.json`：内容与 CLI 生成的一致就删掉，内容被改过则提醒不再使用；
+/// 3) package.json 的 build 脚本缺声明前置 → 补上（.vue 用 vue-tsc，纯 TS 用 tsc）。
 ///
 /// 全部条目显式 `types: false`（或未登记任何组件）的工程（纯使用者项目）不碰任何文件。
 pub(crate) fn fix_component_decl_pipeline(root: &Path) -> Result<()> {
@@ -22,15 +27,28 @@ pub(crate) fn fix_component_decl_pipeline(root: &Path) -> Result<()> {
         return Ok(());
     }
 
-    let cfg_path = root.join(DTS_TSCONFIG);
-    if !cfg_path.is_file() {
-        fs::write(&cfg_path, dts_tsconfig_content(root, &components))
-            .with_context(|| format!("写入失败: {}", cfg_path.display()))?;
-        style::out(format!(
-            "{} {}（组件声明产出）",
-            style::ok("已生成"),
-            style::muted(cfg_path.display())
-        ));
+    ensure_types(root);
+
+    let old_cfg = root.join(STANDALONE_DECL_TSCONFIG);
+    if old_cfg.is_file() {
+        let generated = fs::read_to_string(&old_cfg)
+            .is_ok_and(|t| t == standalone_decl_tsconfig(root, &components));
+        if generated {
+            fs::remove_file(&old_cfg).with_context(|| format!("删除失败: {}", old_cfg.display()))?;
+            style::out(format!(
+                "{} {}（声明产出已并入 {}）",
+                style::ok("已删除"),
+                style::muted(old_cfg.display()),
+                style::accent(REF_TSCONFIG)
+            ));
+        } else {
+            style::out(format!(
+                "{} {} 已不被 oui 使用（声明产出在 {}）",
+                style::warn("注意："),
+                style::muted(old_cfg.display()),
+                style::accent(REF_TSCONFIG)
+            ));
+        }
     }
 
     let cmd = decl_cmd(root, &components);
@@ -58,13 +76,24 @@ pub(crate) fn fix_component_decl_pipeline(root: &Path) -> Result<()> {
         ));
         return Ok(());
     };
-    if build.contains(DTS_TSCONFIG) {
+    if build.contains(REF_TSCONFIG) {
         return Ok(());
     }
-    match replace_json_string_value(&text, "build", &format!("{cmd} && {build}")) {
+    let (next_build, note) = if build.contains(STANDALONE_DECL_TSCONFIG) {
+        (
+            build.replace(STANDALONE_DECL_TSCONFIG, REF_TSCONFIG),
+            format!("已把 package.json 的 build 脚本指向 `{REF_TSCONFIG}`"),
+        )
+    } else {
+        (
+            format!("{cmd} && {build}"),
+            format!("已在 package.json 的 build 脚本前置 `{cmd} &&`"),
+        )
+    };
+    match replace_json_string_value(&text, "build", &next_build) {
         Some(next) => {
             fs::write(&pkg_json, next).with_context(|| format!("写入失败: {}", pkg_json.display()))?;
-            style::out(format!("{} `{cmd} &&`", style::ok("已在 package.json 的 build 脚本前置")));
+            style::out(style::ok(note));
         }
         None => style::out(format!(
             "{}package.json 的 build 脚本未改动，请自行前置 `{cmd} &&`",
@@ -94,7 +123,15 @@ pub(crate) fn decl_cmd(root: &Path, components: &[PkgComponent]) -> String {
                 || c.source.as_ref().is_some_and(|s| s.iter().any(|f| f.ends_with(".vue")))
         });
     let tool = if has_vue { "vue-tsc" } else { "tsc" };
-    format!("{tool} -p {DTS_TSCONFIG}")
+    format!("{tool} -p {REF_TSCONFIG}")
+}
+
+/// 声明产出的源码根相对工程根的路径（`src` 优先；工程根即源码根时为 `""`）。
+pub(crate) fn decl_root_rel(root: &Path, components: &[PkgComponent]) -> String {
+    decl_root_dir(root, components)
+        .strip_prefix(root)
+        .map(|p| p.to_string_lossy().replace('\\', "/"))
+        .unwrap_or_default()
 }
 
 /// 声明产出的源码根：优先 `src/`，否则取各组件 entry 目录的公共前缀，兜底工程根。
@@ -127,13 +164,9 @@ pub(crate) fn decl_root_dir(root: &Path, components: &[PkgComponent]) -> PathBuf
     }
 }
 
-/// 声明产出的 `tsconfig.dts.json` 模板（与工程布局对齐；目录为工程根时用 `**/*` 通配）。
-pub(crate) fn dts_tsconfig_content(root: &Path, components: &[PkgComponent]) -> String {
-    let dir_root = decl_root_dir(root, components);
-    let dir = dir_root
-        .strip_prefix(root)
-        .map(|p| p.to_string_lossy().replace('\\', "/"))
-        .unwrap_or_default();
+/// 合并前 CLI 单独生成的声明产出配置内容（用于识别可删除的旧文件）。
+pub(crate) fn standalone_decl_tsconfig(root: &Path, components: &[PkgComponent]) -> String {
+    let dir = decl_root_rel(root, components);
     let (root_dir, ts, vue) = if dir.is_empty() {
         (".", "**/*.ts".to_string(), "**/*.vue".to_string())
     } else {
