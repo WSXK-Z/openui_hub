@@ -2,6 +2,9 @@
   "include": ["src/**/*", "src/**/*.vue", "oui.d.ts"],
   "compilerOptions": {
     "paths": {
+      "oui-hub:@test/button": ["./node_modules/.hub-cache/types/@test/button/index"],
+      "oui-hub:@test/button@0.1.0": ["./node_modules/.hub-cache/types/@test/button/0.1.0/index"],
+      "oui-hub:@test/button@0.1.1": ["./node_modules/.hub-cache/types/@test/button/0.1.1/index"],
       "oui-hub:@test/button@0.1.2": ["./node_modules/.hub-cache/types/@test/button/0.1.2/index"]
     },
     "noEmit": true,
