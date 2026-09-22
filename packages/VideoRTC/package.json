@@ -1,0 +1,55 @@
+{
+  "name": "@dp_ui/video-rtc",
+  "version": "0.1.0",
+  "description": "go2rtc 视频播放器：VideoRTC（WebRTC/MSE/HLS/MJPEG 内核）与 VideoStream（带状态栏 GUI）",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "./dist/style.css",
+    "**/*.css"
+  ],
+  "main": "./dist/VideoRTC.cjs",
+  "module": "./dist/VideoRTC.mjs",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/VideoRTC.mjs",
+      "require": "./dist/VideoRTC.cjs"
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "type-check": "vue-tsc --build",
+    "build:lib": "vite build --config build/build.lib.ts",
+    "build:types": "vue-tsc -p tsconfig.build.json",
+    "build:dist": "pnpm run clean:dist && pnpm run build:lib && pnpm run build:types",
+    "prepublishOnly": "pnpm run build:dist",
+    "clean:dist": "node -e \"import('node:fs').then(({rmSync}) => rmSync('dist', {recursive: true, force: true}))\""
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "^24.13.3",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/tsconfig": "^0.9.1",
+    "oxfmt": "^0.61.0",
+    "oxlint": "^1.76.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5",
+    "vue": "^3.5.40",
+    "vue-tsc": "^3.3.8"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.12.0"
+  }
+}
