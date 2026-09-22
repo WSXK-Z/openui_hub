@@ -59,6 +59,8 @@ const CODECS = [
     'flac',             // FLAC (PCM compatible)
     'opus',             // OPUS Chrome, Firefox
 ];
+// 本实例的编码表（init 里会按 Safari 版本裁剪，不动模块级的 CODECS）
+const codecList = [...CODECS];
 const background = false;
 const pcConfig: RTCConfiguration & { sdpSemantics: string } = {
     bundlePolicy: 'max-bundle',
@@ -69,6 +71,7 @@ const pcConfig: RTCConfiguration & { sdpSemantics: string } = {
 let ws: WebSocket | null = null;
 let pc: RTCPeerConnection | null = null;
 let mseCodecs = '';
+let mseURL = '';
 let disconnectTID = 0;
 let reconnectTID = 0;
 let observer: IntersectionObserver | null = null;
@@ -138,9 +141,15 @@ const send = (value: object) => {
     if (ws) ws.send(JSON.stringify(value));
 }
 const codecs = (isSupported: (type: string) => boolean | string) => {
-    return CODECS
+    return codecList
         .filter(codec => props.media.includes(codec.includes('vc1') ? 'video' : 'audio'))
         .filter(codec => isSupported(`video/mp4; codecs="${codec}"`)).join();
+}
+/** 释放上一个 MSE 会话的 blob URL，否则 MediaSource 会被 URL 引用住不回收 */
+const revokeMseURL = () => {
+    if (!mseURL) return;
+    URL.revokeObjectURL(mseURL);
+    mseURL = '';
 }
 const bufferToBase64 = (buffer: ArrayBuffer) => {
     const bytes = new Uint8Array(buffer);
@@ -188,6 +197,8 @@ const disconnect = () => {
         video.src = '';
         video.srcObject = null;
     }
+
+    revokeMseURL();
 }
 const onopen = () => {
     if (!ws) {
@@ -317,11 +328,12 @@ const onmse = () => {
     } else {
         ms = new MediaSource();
         ms.addEventListener('sourceopen', () => {
-            URL.revokeObjectURL(video.src);
             send({ type: 'mse', value: codecs(MediaSource.isTypeSupported) });
         }, { once: true });
 
-        video.src = URL.createObjectURL(ms);
+        revokeMseURL();
+        mseURL = URL.createObjectURL(ms);
+        video.src = mseURL;
         video.srcObject = null;
     }
 
@@ -370,6 +382,13 @@ const onmse = () => {
         ondata = data => {
             if (sb.updating || bufLen > 0) {
                 const b = new Uint8Array(data);
+                if (bufLen + b.byteLength > buf.length) {
+                    // SourceBuffer 长时间 busy 导致积压超过缓冲上限时丢掉这一块，
+                    // 避免 buf.set 越界抛 RangeError（下一个关键帧会自然恢复）
+                    bufLen = 0;
+                    console.warn('[VideoRTC] MSE buffer overflow, drop a chunk');
+                    return;
+                }
                 buf.set(b, bufLen);
                 bufLen += b.byteLength;
             } else {
@@ -487,6 +506,9 @@ const onpcvideo = (video2: HTMLVideoElement) => {
             video.srcObject = stream;
             play();
 
+            // MSE 分支已被放弃，顺手释放它的 blob URL
+            revokeMseURL();
+
             pcState.value = WebSocket.OPEN;
 
             wsState.value = WebSocket.CLOSED;
@@ -577,7 +599,8 @@ const init = () => {
     if (m) {
         // AAC from v13, FLAC from v14, OPUS - unsupported
         const skip = m[1]! < '13' ? 'mp4a.40.2' : m[1]! < '14' ? 'flac' : 'opus';
-        CODECS.splice(CODECS.indexOf(skip));
+        const index = codecList.indexOf(skip);
+        if (index >= 0) codecList.splice(index, 1);
     }
 
     if (background) return;

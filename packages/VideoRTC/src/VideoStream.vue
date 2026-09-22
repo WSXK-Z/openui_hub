@@ -98,8 +98,8 @@ defineExpose({ mode: channel, status: statusText, play, send });
 <template>
     <div class="video-stream" :style="props.ratio ? { aspectRatio: props.ratio } : null">
         <VideoRTC ref="player" :src="props.src" :visibility-check="props.visibilityCheck"
-            :visibility-threshold="props.visibilityThreshold" :mode="props.mode" :media="props.media"
-            :fit="props.fit" @connect="onConnect" @message="onMessage" @pcvideo="onPcvideo">
+            :visibility-threshold="props.visibilityThreshold" :mode="props.mode" :media="props.media" :fit="props.fit"
+            @connect="onConnect" @message="onMessage" @pcvideo="onPcvideo">
         </VideoRTC>
         <div class="info">
             <div class="status">{{ statusText }}</div>
