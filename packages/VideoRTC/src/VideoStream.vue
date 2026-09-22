@@ -1,5 +1,6 @@
 <script setup lang='ts'>
 import { ref } from 'vue';
+import type { PropType } from 'vue';
 import VideoRTC from './VideoRTC.vue';
 
 const props = defineProps({
@@ -27,7 +28,7 @@ const props = defineProps({
     },
     // 画面适配：fill 铺满（默认，与上游一致）/ contain 等比留边 / cover 等比裁切
     fit: {
-        type: String,
+        type: String as PropType<'fill' | 'contain' | 'cover'>,
         default: 'fill'
     },
     // 容器比例（CSS aspect-ratio，如 '16/9'、'4/3'、'auto'），留空表示不设置；

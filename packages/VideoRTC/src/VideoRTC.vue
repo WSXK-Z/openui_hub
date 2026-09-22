@@ -1,5 +1,6 @@
 <script setup lang='ts'>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import type { CSSProperties, PropType } from 'vue';
 
 const props = defineProps({
     src: {
@@ -26,7 +27,7 @@ const props = defineProps({
     },
     // 画面适配：fill 铺满（默认，与上游一致）/ contain 等比留边 / cover 等比裁切
     fit: {
-        type: String,
+        type: String as PropType<'fill' | 'contain' | 'cover'>,
         default: 'fill'
     },
     // 容器比例（CSS aspect-ratio，如 '16/9'、'4/3'、'auto'），留空表示不设置；
@@ -81,7 +82,7 @@ const MEDIA_ERRORS: { [key: number]: string } = {
 const baseVideo = ref<HTMLVideoElement | null>(null);
 /** 画面适配；ratio 有值时高度交给 aspect-ratio，宽度可驱动 */
 const videoStyle = computed(() => {
-    const style: { objectFit: string; aspectRatio?: string; height?: string } = { objectFit: props.fit };
+    const style: CSSProperties = { objectFit: props.fit };
     if (props.ratio) {
         style.aspectRatio = props.ratio;
         style.height = 'auto';
