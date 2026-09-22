@@ -24,6 +24,17 @@ const props = defineProps({
     media: {
         type: String,
         default: 'video,audio'
+    },
+    // 画面适配：fill 铺满（默认，与上游一致）/ contain 等比留边 / cover 等比裁切
+    fit: {
+        type: String,
+        default: 'fill'
+    },
+    // 容器比例（CSS aspect-ratio，如 '16/9'、'4/3'、'auto'），留空表示不设置；
+    // 作用在组件根元素上，设了比例就能只给宽度
+    ratio: {
+        type: String,
+        default: ''
     }
 });
 
@@ -84,10 +95,10 @@ defineExpose({ mode: channel, status: statusText, play, send });
 </script>
 
 <template>
-    <div class="video-stream">
+    <div class="video-stream" :style="props.ratio ? { aspectRatio: props.ratio } : null">
         <VideoRTC ref="player" :src="props.src" :visibility-check="props.visibilityCheck"
             :visibility-threshold="props.visibilityThreshold" :mode="props.mode" :media="props.media"
-            @connect="onConnect" @message="onMessage" @pcvideo="onPcvideo">
+            :fit="props.fit" @connect="onConnect" @message="onMessage" @pcvideo="onPcvideo">
         </VideoRTC>
         <div class="info">
             <div class="status">{{ statusText }}</div>

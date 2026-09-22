@@ -23,6 +23,17 @@ const props = defineProps({
     media: {
         type: String,
         default: 'video,audio'
+    },
+    // 画面适配：fill 铺满（默认，与上游一致）/ contain 等比留边 / cover 等比裁切
+    fit: {
+        type: String,
+        default: 'fill'
+    },
+    // 容器比例（CSS aspect-ratio，如 '16/9'、'4/3'、'auto'），留空表示不设置；
+    // 设了比例就不再强制高度 100%，可由宽度驱动
+    ratio: {
+        type: String,
+        default: ''
     }
 });
 
@@ -68,6 +79,15 @@ const MEDIA_ERRORS: { [key: number]: string } = {
     4: 'MEDIA_ERR_SRC_NOT_SUPPORTED'
 };
 const baseVideo = ref<HTMLVideoElement | null>(null);
+/** 画面适配；ratio 有值时高度交给 aspect-ratio，宽度可驱动 */
+const videoStyle = computed(() => {
+    const style: { objectFit: string; aspectRatio?: string; height?: string } = { objectFit: props.fit };
+    if (props.ratio) {
+        style.aspectRatio = props.ratio;
+        style.height = 'auto';
+    }
+    return style;
+});
 const isHidden = ref<boolean>(false);
 const isConnected = ref<boolean>(false);
 const wsState = ref<number>(WebSocket.CLOSED);
@@ -621,7 +641,7 @@ defineExpose({ play, send });
 </script>
 
 <template>
-    <video ref="baseVideo" playsinline muted controls preload="auto" @error="onerror"></video>
+    <video ref="baseVideo" playsinline muted controls preload="auto" :style="videoStyle" @error="onerror"></video>
 </template>
 
 <style scoped>
