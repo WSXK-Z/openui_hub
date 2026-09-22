@@ -14,6 +14,16 @@ defineProps({
     visibilityThreshold: {
         type: Number,
         default: 0
+    },
+    // 支持的通道，逗号分隔：webrtc, webrtc/tcp, mse, hls, mp4, mjpeg
+    mode: {
+        type: String,
+        default: 'webrtc,mse,hls,mjpeg'
+    },
+    // 请求的媒体，逗号分隔：video, audio, microphone
+    media: {
+        type: String,
+        default: 'video,audio'
     }
 });
 
@@ -75,7 +85,8 @@ defineExpose({ mode, status, play, send });
 <template>
     <div class="video-stream">
         <VideoRTC ref="player" :src="src" :visibility-check="visibilityCheck"
-            :visibility-threshold="visibilityThreshold" @connect="onConnect" @message="onMessage" @pcvideo="onPcvideo">
+            :visibility-threshold="visibilityThreshold" :mode="mode" :media="media" @connect="onConnect"
+            @message="onMessage" @pcvideo="onPcvideo">
         </VideoRTC>
         <div class="info">
             <div class="status">{{ status }}</div>

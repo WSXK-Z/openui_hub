@@ -35,6 +35,8 @@ import '@dp_ui/video-rtc/style.css'
 | `src`                 | `string \| URL` | 必填   | go2rtc 的 `/api/ws?src=<stream>` 地址                          |
 | `visibilityCheck`     | `boolean`       | `true` | 页面切到后台（`document.hidden`）时暂停，回到前台恢复          |
 | `visibilityThreshold` | `number`        | `0`    | 视口可见比例（0~1），大于 `0` 时滚出视口即暂停，`0` 表示不监听 |
+| `mode`                | `string`        | `webrtc,mse,hls,mjpeg` | 允许的通道，逗号分隔：`webrtc`、`webrtc/tcp`、`mse`、`hls`、`mp4`、`mjpeg`；只写 `webrtc` 就只走 WebRTC |
+| `media`               | `string`        | `video,audio` | 请求的媒体，逗号分隔：`video`、`audio`、`microphone`           |
 
 ## 实例方法
 

@@ -1,6 +1,6 @@
 {
   "name": "@dp_ui/video-rtc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "go2rtc 视频播放器：VideoRTC（WebRTC/MSE/HLS/MJPEG 内核）与 VideoStream（带状态栏 GUI）",
   "files": [
     "dist"

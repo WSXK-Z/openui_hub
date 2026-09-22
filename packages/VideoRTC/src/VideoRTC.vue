@@ -13,6 +13,16 @@ const props = defineProps({
     visibilityThreshold: {
         type: Number,
         default: 0
+    },
+    // 支持的通道，逗号分隔：webrtc, webrtc/tcp, mse, hls, mp4, mjpeg
+    mode: {
+        type: String,
+        default: 'webrtc,mse,hls,mjpeg'
+    },
+    // 请求的媒体，逗号分隔：video, audio, microphone
+    media: {
+        type: String,
+        default: 'video,audio'
     }
 });
 
@@ -37,8 +47,6 @@ const CODECS = [
     'flac',             // FLAC (PCM compatible)
     'opus',             // OPUS Chrome, Firefox
 ];
-const mode = 'webrtc,mse,hls,mjpeg';
-const media = 'video,audio';
 const background = false;
 const pcConfig: RTCConfiguration & { sdpSemantics: string } = {
     bundlePolicy: 'max-bundle',
@@ -110,7 +118,7 @@ const send = (value: object) => {
 }
 const codecs = (isSupported: (type: string) => boolean | string) => {
     return CODECS
-        .filter(codec => media.includes(codec.includes('vc1') ? 'video' : 'audio'))
+        .filter(codec => props.media.includes(codec.includes('vc1') ? 'video' : 'audio'))
         .filter(codec => isSupported(`video/mp4; codecs="${codec}"`)).join();
 }
 const bufferToBase64 = (buffer: ArrayBuffer) => {
@@ -185,23 +193,23 @@ const onopen = () => {
 
     const modes: string[] = [];
 
-    if (mode.includes('mse') && ('MediaSource' in window || 'ManagedMediaSource' in window)) {
+    if (props.mode.includes('mse') && ('MediaSource' in window || 'ManagedMediaSource' in window)) {
         modes.push('mse');
         onmse();
-    } else if (mode.includes('hls') && (video ? video.canPlayType('application/vnd.apple.mpegurl') : '')) {
+    } else if (props.mode.includes('hls') && (video ? video.canPlayType('application/vnd.apple.mpegurl') : '')) {
         modes.push('hls');
         onhls();
-    } else if (mode.includes('mp4')) {
+    } else if (props.mode.includes('mp4')) {
         modes.push('mp4');
         onmp4();
     }
 
-    if (mode.includes('webrtc') && 'RTCPeerConnection' in window) {
+    if (props.mode.includes('webrtc') && 'RTCPeerConnection' in window) {
         modes.push('webrtc');
         onwebrtc();
     }
 
-    if (mode.includes('mjpeg')) {
+    if (props.mode.includes('mjpeg')) {
         if (modes.length) {
             onmessage['mjpeg'] = (msg: any) => {
                 if (msg.type !== 'error' || msg.value.indexOf(modes[0]!) !== 0) return;
@@ -357,7 +365,7 @@ const onwebrtc = () => {
     const conn = new RTCPeerConnection(pcConfig);
 
     conn.addEventListener('icecandidate', ev => {
-        if (ev.candidate && mode.includes('webrtc/tcp') && ev.candidate.protocol === 'udp') return;
+        if (ev.candidate && props.mode.includes('webrtc/tcp') && ev.candidate.protocol === 'udp') return;
 
         const candidate = ev.candidate ? ev.candidate.toJSON().candidate : '';
         send({ type: 'webrtc/candidate', value: candidate });
@@ -384,7 +392,7 @@ const onwebrtc = () => {
     onmessage['webrtc'] = (msg: any) => {
         switch (msg.type) {
             case 'webrtc/candidate':
-                if (mode.includes('webrtc/tcp') && msg.value.includes(' udp ')) return;
+                if (props.mode.includes('webrtc/tcp') && msg.value.includes(' udp ')) return;
 
                 conn.addIceCandidate({ candidate: msg.value, sdpMid: '0' }).catch(er => {
                     console.warn(er);
@@ -410,7 +418,7 @@ const onwebrtc = () => {
 }
 const createOffer = async (conn: RTCPeerConnection) => {
     try {
-        if (media.includes('microphone')) {
+        if (props.media.includes('microphone')) {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             stream.getTracks().forEach(track => {
                 conn.addTransceiver(track, { direction: 'sendonly' });
@@ -421,7 +429,7 @@ const createOffer = async (conn: RTCPeerConnection) => {
     }
 
     for (const kind of ['video', 'audio'] as const) {
-        if (media.includes(kind)) {
+        if (props.media.includes(kind)) {
             conn.addTransceiver(kind, { direction: 'recvonly' });
         }
     }
