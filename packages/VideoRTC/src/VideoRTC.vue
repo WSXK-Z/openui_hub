@@ -385,7 +385,12 @@ const onwebrtc = () => {
             pcState.value = WebSocket.CLOSED;
             pc = null;
 
-            connect();
+            // WebRTC 是 ws 的并行分支，失败时 ws 可能还开着，
+            // 那样 connect() 会直接返回 false 而不再重试，所以主动关掉交给 onclose 的节流重连
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
         }
     });
 
