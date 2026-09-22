@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import VideoRTC from './VideoRTC.vue';
 
-defineProps({
+const props = defineProps({
     src: {
         type: [String, URL],
         required: true
@@ -34,27 +34,28 @@ const player = ref<InstanceType<typeof VideoRTC> | null>(null);
 
 /**
  * [info] 当前播放方式（loading / error / MSE / HLS / MP4 / MJPEG / RTC）
+ * 变量名不叫 mode，避免与同名 prop 相互遮蔽
  * @type {string}
  */
-const mode = ref<string>('');
+const channel = ref<string>('');
 
 /**
- * [info] 错误信息，仅在 `mode` 为 `loading` 时的错误会被记录
+ * [info] 错误信息，仅在 `channel` 为 `loading` 时的错误会被记录
  * @type {string}
  */
-const status = ref<string>('');
+const statusText = ref<string>('');
 
-const setMode = (value: string) => {
-    mode.value = value;
-    status.value = '';
+const setChannel = (value: string) => {
+    channel.value = value;
+    statusText.value = '';
 }
 const setError = (value: string) => {
-    if (mode.value !== 'loading') return;
-    mode.value = 'error';
-    status.value = value;
+    if (channel.value !== 'loading') return;
+    channel.value = 'error';
+    statusText.value = value;
 }
 const onConnect = (result: boolean) => {
-    if (result) setMode('loading');
+    if (result) setChannel('loading');
 }
 const onMessage = (msg: any) => {
     switch (msg.type) {
@@ -65,12 +66,12 @@ const onMessage = (msg: any) => {
         case 'hls':
         case 'mp4':
         case 'mjpeg':
-            setMode(msg.type.toUpperCase());
+            setChannel(msg.type.toUpperCase());
             break;
     }
 }
 const onPcvideo = (state: number) => {
-    if (state !== WebSocket.CLOSED) setMode('RTC');
+    if (state !== WebSocket.CLOSED) setChannel('RTC');
 }
 const play = () => {
     player.value?.play();
@@ -79,18 +80,18 @@ const send = (value: object) => {
     player.value?.send(value);
 }
 
-defineExpose({ mode, status, play, send });
+defineExpose({ mode: channel, status: statusText, play, send });
 </script>
 
 <template>
     <div class="video-stream">
-        <VideoRTC ref="player" :src="src" :visibility-check="visibilityCheck"
-            :visibility-threshold="visibilityThreshold" :mode="mode" :media="media" @connect="onConnect"
-            @message="onMessage" @pcvideo="onPcvideo">
+        <VideoRTC ref="player" :src="props.src" :visibility-check="props.visibilityCheck"
+            :visibility-threshold="props.visibilityThreshold" :mode="props.mode" :media="props.media"
+            @connect="onConnect" @message="onMessage" @pcvideo="onPcvideo">
         </VideoRTC>
         <div class="info">
-            <div class="status">{{ status }}</div>
-            <div class="mode">{{ mode }}</div>
+            <div class="status">{{ statusText }}</div>
+            <div class="mode">{{ channel }}</div>
         </div>
     </div>
 </template>

@@ -177,8 +177,8 @@ const onopen = () => {
     ws.addEventListener('message', ev => {
         if (typeof ev.data === 'string') {
             const msg = JSON.parse(ev.data);
-            for (const mode in onmessage) {
-                onmessage[mode]!(msg);
+            for (const key in onmessage) {
+                onmessage[key]!(msg);
             }
             emit('message', msg);
         } else if (ondata) {
