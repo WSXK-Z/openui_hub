@@ -120,8 +120,8 @@ graph TD
 
 | 层级      | 载体                | 是否 UI 组件        | 是否行为组件     | 职责                                                   |
 | --------- | ------------------- | ------------------- | ---------------- | ------------------------------------------------------ |
-| Page      | `DpPage` + 布局模板 | 容器型（含布局 UI） | 注入页面级上下文 | 根路由容器；决定界面整体结构布局；**处理全部路由事务** |
-| Panel     | `DpPanel`           | 容器型              | 注入面板级上下文 | 页面的功能划分单元；不感知、不显示路由                 |
+| Page      | `DpPage` + 布局模板 | 容器型（含布局 UI） | 注入页面级上下文 + Panel Group | 根路由容器；决定界面整体结构布局；**处理全部路由事务**；渲染面板停靠位 |
+| Panel     | `DpPanel`           | 容器型              | 注入面板级上下文 + 注册面板句柄 | 页面的功能划分单元；不感知、不显示路由；可选浮动/拖动/缩放/持久化 |
 | Component | `DpButton` 等       | 纯 UI               | —                | 可复用的基础视觉/交互能力                              |
 | Component | `DpAuth` 等         | —                   | 纯逻辑           | 可复用的逻辑能力                                       |
 
@@ -450,7 +450,7 @@ import DpButton from "@dp_ui/core/components/button";
 ```jsonc
 {
   "name": "@dp_ui/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "main": "./dist/core.cjs",
   "module": "./dist/core.mjs",
@@ -498,7 +498,9 @@ import DpButton from "@dp_ui/core/components/button";
 
 ### 8.3 设计令牌与主题定制
 
-- `src/tokens/` 定义设计令牌：颜色（语义色/中性色）、间距、圆角、字体、阴影、断点、层级 z-index 等。
+- `src/tokens/` 定义设计令牌：OKLch 语义色（`bg` / `surface*` / `fg*` / `muted` / `border*` / `accent*` / `brass` / `ok` / `warn` / `danger` / `info`）、4px 间距阶梯、11 级字号、圆角（xs/sm/md/lg/xl）、三级语义阴影、焦点环、动效时长与缓动。
+- 取值与使用规则见 [DESIGN_SYSTEM_CORE.md](./DESIGN_SYSTEM_CORE.md)。
+- 亮/暗双主题通过 `data-dp-theme="dark"` 在任意容器上切换，组件无需条件样式。
 - 封装为 **`presetDpUi`**（一个 UnoCSS preset），供使用方在 `uno.config.ts` 中继承：
 
 ```ts
@@ -531,15 +533,18 @@ export default defineConfig({ presets: [presetDpUi()] });
 
 **途径二：通过 CSS 修改**
 
-- **CSS 变量（推荐）**：所有设计令牌在组件根元素以 `--dp-*` CSS 变量输出（如 `--dp-color-primary`、`--dp-radius-lg`、`--dp-size-btn-h`），遵循 CSS 变量继承，外部在任意父级或组件根上覆盖即可生效：
+- **CSS 变量（推荐）**：所有设计令牌在 `:root` 以 `--dp-*` CSS 变量输出（如 `--dp-color-accent`、`--dp-color-fg-2`、`--dp-radius-lg`、`--dp-shadow-2`），遵循 CSS 变量继承，外部在任意父级或组件根上覆盖即可生效：
 
 ```css
 /* 使用方全局覆盖（仅示意） */
 :root {
-  --dp-color-primary: #6366f1;
+  --dp-color-accent: oklch(52% 0.18 268);
+}
+[data-dp-theme='dark'] {
+  --dp-color-accent: oklch(72% 0.14 268);
 }
 .my-scope .dp-button {
-  --dp-radius: 8px; /* 局部覆盖 */
+  --dp-radius: 14px; /* 局部覆盖 */
 }
 ```
 
@@ -597,7 +602,8 @@ dp_ui/                                   # pnpm workspace 根
     │   │   │   ├── usePanel.ts
     │   │   │   └── index.ts
     │   │   ├── components/              # ── Component 层（按功能分类，不再分 ui/behavior）──
-    │   │   │   ├── common/              # 通用：button/icon/tag/divider/avatar/card…
+    │   │   │   ├── categories.ts        # 组件分类元数据（Common / Data Input / …）
+    │   │   │   ├── common/              # 通用：avatar/button/card/accordion/divider/icon/tag…
     │   │   │   │   └── button/
     │   │   │   │       ├── DpButton.vue
     │   │   │   │       ├── index.ts     # 导出组件 + install

@@ -9,7 +9,7 @@
 | `packages/core`       | `@dp_ui/core` 核心组件库（page → panel → component，功能分类组件，全量/按需加载）                                                                       |
 | `packages/chat`       | `@dp_ui/chat` AI 对话界面组件库（Dpc* 前缀，独立 `--dpc-*` 令牌）                                                                                       |
 | `packages/schema`     | @dp_ui/schema 数据驱动编排层（schema 元数据决定结构/样式，绑定数据 + dataSource 驱动交互；渲染目标为 @dp_ui/core 组件，见 `packages/schema/DESIGN.md`） |
-| `packages/playground` | 演示应用（验证全量与按需接入、@dp_ui/schema 数据驱动演示 `/schema-demo`）                                                                               |
+| `packages/playground` | 演示应用（以 @dp_ui/core 组件文档站为主入口 `/docs/button`；其他包的演示保留为直达路由）                                                                               |
 
 ## 常用命令（根目录执行）
 
@@ -34,5 +34,7 @@ pnpm build:chat                    # 构建 @dp_ui/chat（dist/）
 ## 文档
 
 - 设计文档：`docs/DESIGN.md`（@dp_ui/core）
+- UI 设计体系（Token / 组件 / 可访问性）：`docs/DESIGN_SYSTEM_CORE.md`
+- Cool Neutral 设计系统接入：`docs/COOL_NEUTRAL_THEME.md`
 - 数据驱动层设计说明：`packages/schema/DESIGN.md`
 - 核心组件库说明：`packages/core/README.md`
