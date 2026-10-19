@@ -83,7 +83,7 @@
 ```
 vue-router → DpPage(provide PageContext)
            → DpPanel(provide PanelContext)
-           → DpConfigProvider(provide ThemeContext)
+           → DpConfigProvider / useTheme(options)(provide ThemeContext)
            → DpAuth(provide AuthContext) / DpProvide(provide 任意 key)
            → UI/行为组件(inject 消费)
 ```
@@ -277,6 +277,7 @@ interface DpPanelComp {
 | 上下文注入 provide | [src/components/provide](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/components/provide) | DpProvide、useInject（行为组件） |
 | 懒加载 lazy | [src/components/lazy](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/components/lazy) | DpLazy（行为组件） |
 | 配置 config | [src/components/config](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/components/config) | DpConfigProvider（行为组件） |
+| 主题 theme | [src/theme](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/theme) | DpThemeProvider、DpThemeSwitch、DpThemeToggle、useTheme / createThemeController |
 
 每类由目录内 `index.ts` 聚合；分类元数据见 [src/components/categories.ts](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/components/categories.ts)（`dpComponentCategories` / `findComponentCategory`），安装顺序、文档目录与之一致。
 
@@ -354,19 +355,178 @@ interface DpLazyComp { rootMargin: string; delay: number }
 
 ```ts
 interface DpConfigProviderComp {
-  themeOverrides: Record<string, string | number>  // key 去掉 --dp- 前缀
+  themes: Record<string, DpThemeDefinition>          // 托管的命名主题
+  theme: string                                      // 受控主题名
+  defaultTheme: string
+  themeOverrides: DpThemeOverrides                   // key 去掉 --dp- 前缀
+  mode: DpThemeMode | ''                             // 'light' | 'dark' | 'system'，空串使用存储值 / 主题定义 / defaultMode
+  defaultMode: DpThemeMode
+  persist: boolean
+  storageKey: string
+  applyTo: 'self' | 'document'
 }
 ```
 
-- `provideThemeContext()` 注入 ThemeContext
-- themeOverrides 转换为 `--dp-*` CSS 变量写入根元素 style
+- 全部为纯数据参数，默认值来自 `app.use(DpUi, options)` 的全局主题配置，`comp` 优先
+- 自身实现主题宿主逻辑（`useThemeHost`），不依赖 `DpThemeProvider`
+- 用 `useScope` 把 `--dp-*`、`data-dp-theme`、主题类名合并到插槽根节点，不产生包裹元素
+- 事件：`change(mode, resolved)`
 
-[src/components/config/themeContext.ts](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/components/config/themeContext.ts)：
+#### 主题全局配置
+
+[src/theme/themeConfig.ts](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/theme/themeConfig.ts)
 
 ```ts
-interface ThemeContext { themeOverrides?: Record<string, string | number> }
-function useTheme(): ThemeContext
+interface DpThemeConfig {
+  themes?: Record<string, DpThemeDefinition>
+  theme?: string
+  defaultTheme?: string
+  themeOverrides?: DpThemeOverrides
+  mode?: DpThemeMode | ''
+  defaultMode?: DpThemeMode
+  persist?: boolean
+  storageKey?: string
+  applyTo?: 'self' | 'document'
+}
+
+function provideDpThemeConfig(app: App, config?: DpThemeConfig): void
+function setGlobalThemeConfig(config?: DpThemeConfig): void
+function getGlobalThemeConfig(): DpThemeConfig
+function useDpThemeConfig(): DpThemeConfig
+function resolveThemeHostComp(
+  comp?: Partial<DpThemeHostComp>,
+  config?: DpThemeConfig,
+): DpThemeHostComp
 ```
+
+- `app.use(DpUi, options)` 会把 `options` 注入 app 并记为模块级全局默认值
+- `DpConfigProvider` / `DpThemeProvider` 通过 `useDpThemeConfig()` 读取，并按「`comp` → 全局配置 → 内置默认值」合并
+- `resolveThemeHostComp` 保证 `themes` 为空时回退 `{ default: {} }`
+
+#### 主题模块（src/theme）
+
+与 `src/page`、`src/panel` 同级，入口 `src/theme/index.ts`，可按需导入 `@dp_ui/core/theme`。包含主题提供器、主题控制器、上下文 composable 与主题切换组件。
+
+主题提供器 [src/theme/DpThemeProvider.vue](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/theme/DpThemeProvider.vue)：
+
+```ts
+interface DpThemeDefinition {
+  overrides?: DpThemeOverrides
+  className?: string
+  mode?: DpThemeMode
+}
+
+interface DpThemeProviderComp {
+  themes: Record<string, DpThemeDefinition>
+  theme: string
+  defaultTheme: string
+  themeOverrides: DpThemeOverrides
+  mode: DpThemeMode | ''
+  defaultMode: DpThemeMode
+  persist: boolean
+  storageKey: string
+  applyTo: 'self' | 'document'
+}
+```
+
+- 托管多个命名主题，`useTheme`、`DpThemeSwitch`、`DpThemeToggle` 必须在其子树内使用
+- 缺少 `comp` 字段时使用 `app.use(DpUi, options)` 的全局主题配置
+- 固定为 Fragment 形态：不生成包裹元素，`--dp-*`、`data-dp-theme`、`color-scheme` 与主题类名合并到插槽根节点，DOM 层级与 Provider 外一致
+- 主题定义 `overrides` 与 `themeOverrides` 合并后写入 CSS 变量；`className` 作为主题类名挂到插槽根节点，令牌可直接写在 `<style>` 块
+- 主题定义的 `mode` 在激活时同步到控制器
+- `applyTo="document"` 时额外把主题同步到 `<html>`
+- 事件：`change(theme, mode, resolved)`
+
+通用透明作用域工具 [src/composables/useScope.ts](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/composables/useScope.ts)：
+
+```ts
+type DpScopeAttrs = Record<string, unknown>
+
+/** 创建无包裹元素的作用域组件：把 scopeAttrs 合并到每个插槽根节点 */
+function useScope(name?: string): Component
+/** 低层工具：直接处理 vnode 数组 */
+function applyScopeAttrs(nodes: unknown[], attrs: DpScopeAttrs): VNode[]
+```
+
+- 返回的组件接收 `scopeAttrs`，渲染时把属性合并到每个根节点；数组与 Fragment 会递归展开
+- 文本 / 注释节点无法承载属性，原样保留
+- 与主题无关：任何需要「不改变 DOM 层级地下发属性」的 Provider 都可复用
+- `DpConfigProvider` 与 `DpThemeProvider` 都用它实现 Fragment 形态，二者互不嵌套
+
+主题控制器 [src/theme/themeMode.ts](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/theme/themeMode.ts)：
+
+```ts
+function createThemeController(options?: {
+  mode?: DpThemeMode | ''
+  defaultMode?: DpThemeMode
+  persist?: boolean
+  storageKey?: string
+  applyToDocument?: boolean
+  useDocumentInitial?: boolean
+  disposeOnScope?: boolean
+}): DpThemeController
+
+interface DpThemeController {
+  mode: Ref<DpThemeMode>
+  resolvedMode: ComputedRef<'light' | 'dark'>
+  isDark: ComputedRef<boolean>
+  setMode: (mode: DpThemeMode) => void
+  toggleMode: () => void
+  dispose: () => void
+}
+```
+
+- 初始化优先级：显式 `mode` → localStorage → 主题定义 → `defaultMode`（`system`）
+- `system` 通过 `matchMedia('(prefers-color-scheme: dark)')` 跟随系统并监听变化
+
+主题组件：
+
+| 组件 | 说明 |
+| --- | --- |
+| `DpThemeProvider` | 多主题托管与作用域（`themes` / `theme` / `defaultTheme`） |
+| `DpThemeSwitch` | 浅色 / 深色 / 跟随系统三段选择（`comp.showLabels`、键盘方向键） |
+| `DpThemeToggle` | 单按钮浅深切换（`comp.showLabel`、`comp.label`、`theme.round`） |
+
+[src/theme/themeContext.ts](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/theme/themeContext.ts)：
+
+```ts
+interface ThemeContext {
+  themeOverrides: Record<string, string | number>
+  theme: Ref<string>
+  themes: Ref<Record<string, DpThemeDefinition>>
+  themeNames: ComputedRef<string[]>
+  setTheme: (theme: string) => void
+  themeMode: DpThemeController
+  mode: Ref<DpThemeMode>
+  resolvedMode: ComputedRef<'light' | 'dark'>
+  isDark: ComputedRef<boolean>
+  setMode: (mode: DpThemeMode) => void
+  toggleMode: () => void
+}
+
+function useTheme(options: DpThemeOptions): ThemeContext  // 创建函数式作用域
+function useTheme(): ThemeContext                          // 读取最近作用域
+function useThemeController(): DpThemeController
+```
+
+- **必需作用域**：`useTheme` / `useThemeController` 必须在 `DpThemeProvider`（或内部包装它的 `DpConfigProvider`）内调用，否则抛错。
+- **函数式作用域**：`useTheme({ themeOverrides })` 在当前组件 `provide` 嵌套上下文并追加令牌覆盖；主题名与模式仍由 `DpThemeProvider` 托管，同一组件重复调用返回首次创建的作用域。
+- **主题信息**：`theme` / `themes` / `themeNames` / `setTheme` 来自最近的 Provider，函数式作用域透传。
+- **渲染落地**：`useTheme(options)` 在组件挂载、更新或覆盖变化时，把 `data-dp-theme`、`color-scheme`、`--dp-*` 写到组件根元素（支持多根 Fragment），卸载时恢复根元素原值。
+- 带参数调用必须在组件 `setup` 中，否则抛错。
+
+令牌覆盖类型 [src/theme/themeOverrides.ts](file:///d:/projects/hs/codes/dp/dp_ui/packages/core/src/theme/themeOverrides.ts)：
+
+```ts
+type DpThemeOverrides = Partial<Record<DpThemeOverrideKey, DpThemeCssValue>> & {
+  [key: string]: DpThemeCssValue | undefined
+}
+```
+
+- `DpThemeOverrideKey` 汇总全部内置 `--dp-*` 令牌键（省略前缀），提供 IDE 补全
+- 颜色 / 长度 / 阴影 / 时长 / 缓动 / 字体分别使用带 JSDoc 示例的值类型
+- TS 内联只能做到「键补全 + 常见值字面量」；需要 CSS 全量补全与取色器时改用 `DpThemeDefinition.className`，在 `<style>` 块中书写 `--dp-*` 变量
+- `dpThemeOverrideKeys` 提供运行时键列表，测试保证与 `dpCssVars` 同步
 
 ### 4.7 指令
 

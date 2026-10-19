@@ -22,7 +22,8 @@
 | 数据录入                    | `DpInput` `DpTextarea` `DpInputNumber` `DpSwitch` `DpCheckbox` `DpRadio` `DpSelect` `DpSlider` `DpToggle` `DpTagsInput` |
 | 数据展示                    | `DpTable` `DpEmpty` `DpAccordion`                                                                                       |
 | 反馈                        | `DpBadge` `DpTooltip` `DpPopover` `DpAlert` `DpSpin` `DpSkeleton` `DpProgress` `DpModal`                                |
-| 权限 / 上下文 / 延迟 / 配置 | `DpAuth` `DpProvide` `DpLazy` `DpConfigProvider` + `v-auth` 指令                                                        |
+| 权限 / 上下文 / 延迟 / 配置 | `DpAuth` `DpProvide` `DpLazy` `DpConfigProvider` + `v-auth` 指令 |
+| 主题                      | `DpThemeProvider` `DpThemeSwitch` `DpThemeToggle` + `useTheme` / `useThemeController` |
 | 页面结构                    | `DpPage` `DpPanel` `DpLayoutBasic` `DpLayoutSider`                                                                      |
 
 > `reka-ui` 封装：`DpAvatar` `DpSlider` `DpToggle` `DpTagsInput` `DpAccordion` `DpTooltip` / `DpPopover` / `DpSwitch` / `DpCheckbox` / `DpRadio` / `DpSelect` / `DpTabs` / `DpProgress` / `DpModal`。
@@ -63,6 +64,7 @@ import { DpButton, DpPanel } from '@dp_ui/core'
 ```ts
 import DpButton from '@dp_ui/core/components/common/button'
 import DpPanel from '@dp_ui/core/panel'
+import { useTheme, DpThemeToggle, DpThemeProvider } from '@dp_ui/core/theme'
 ```
 
 ## 设计令牌与主题定制
@@ -74,7 +76,19 @@ import DpPanel from '@dp_ui/core/panel'
 - **语义色**：`--dp-color-bg` / `surface` / `surface-2` / `surface-3`、`fg` / `fg-2` / `muted`、`border` / `border-strong`、`accent` / `accent-hover` / `accent-soft` / `accent-fg`、`brass`、`ok` / `warn` / `danger` / `info`。
 - **兼容别名**：`primary` / `text` / `text-secondary` / `border-hover` / `success` / `warning` / `info-hover` 继续可用，内部映射到语义色。
 - **形态与动效**：`--dp-radius-xs|sm|md|lg|xl`、`--dp-shadow-1|2|3`、`--dp-ring`、`--dp-dur-*`、`--dp-ease-*`。
-- **暗色主题**：在任意祖先元素上设置 `data-dp-theme="dark"`，子树内所有组件自动切换（`DpConfigProvider` 无需改 API）。
+- **暗色主题**：在任意祖先元素上设置 `data-dp-theme="dark"`，子树内所有组件自动切换。
+- **主题托管**：`DpThemeProvider` 与 `DpConfigProvider` 都可用纯数据参数托管多个命名主题，`useTheme` 与 `DpThemeSwitch` / `DpThemeToggle` 必须位于其作用域内。
+- **全局配置**：`app.use(DpUi, { themes, defaultTheme, themeOverrides, mode })` 提供全局默认值，组件 `comp` 优先；`provideDpThemeConfig` / `setGlobalThemeConfig` 可在运行时调整。
+- **不影响 DOM 层级**：Provider 固定为 Fragment，不生成包裹元素，令牌、`data-dp-theme` 与主题类名合并到插槽根节点，被包裹内容的父级就是 Provider 的父级。
+- **主题模式**：`comp.mode` 支持 `light` / `dark` / `system`（跟随系统），并可读取 `mode` / `resolvedMode` / `isDark`、调用 `setMode` / `toggleMode`。
+- **主题持久化**：`comp.persist`（默认开启）把选择写入 `localStorage` 的 `comp.storageKey`（默认 `dp-ui-theme`）；初始化优先级为显式 `mode` → 已存储值 → 主题定义 → `comp.defaultMode`（默认 `system`）。
+- **Portal 主题**：浮层挂到 `body` 时，用 `comp.applyTo="document"` 把解析后的主题写到 `<html>`，关闭 Provider 时恢复原值。
+- **切换组件**：`DpThemeSwitch` 提供浅色 / 深色 / 跟随系统三段选择，`DpThemeToggle` 提供单按钮浅深切换；二者读写最近的主题作用域。
+- **多主题**：主题定义支持 `overrides`（TS 内联令牌）与 `className`（样式块内写令牌），以及 `mode`；`useTheme()` 提供 `theme` / `themes` / `themeNames` / `setTheme`。
+- **CSS 类主题**：`className` 写入插槽根节点，令牌写在 `<style>` 块中即可获得完整 CSS 补全、取色器与变量预览；TS 内联 `overrides` 只提供键补全与常见值字面量。
+- **函数式作用域**：`useTheme({ themeOverrides })` 在当前组件根节点追加令牌覆盖，须位于 Provider 内；主题名与模式始终由 Provider（或全局配置）托管。
+- **类型提示**：`themeOverrides` / 主题 `overrides` 使用 `DpThemeOverrides`，内置令牌键（`color-primary`、`radius`、`shadow-2`、`dur-base` 等）可直接补全，值为带 CSS 示例的类型别名。
+- **读取上下文**：`useTheme()` 无参数读取最近作用域的 `themeOverrides` / `theme` / `themes` / `themeNames` / `setTheme` / `mode` / `resolvedMode` / `isDark` / `setMode` / `toggleMode`。
 
 使用方在 `uno.config.ts` 中继承设计令牌：
 
@@ -94,15 +108,69 @@ export default defineConfig({ presets: [presetDpUi()] })
   提交
 </DpButton>
 
-<!-- 全局 / 局部主题覆盖 -->
-<DpConfigProvider :theme-overrides="{ 'color-accent': 'oklch(52% 0.18 268)' }">
-  ...
+<!-- 局部主题覆盖 + 主题模式 -->
+<DpConfigProvider :comp="{ themeOverrides: { 'color-accent': 'oklch(52% 0.18 268)' }, mode: 'system' }">
+  <DpThemeSwitch />
+</DpConfigProvider>
+
+<!-- 多主题托管：useTheme 必须在其子树内使用 -->
+<DpThemeProvider :comp="{ themes: { ocean: { overrides: { 'color-accent': '#0284c7' } }, violet: { overrides: { 'color-accent': '#7c3aed' } } }, defaultTheme: 'ocean' }">
+  <DpThemeSwitch />
+  <!-- 子组件：const { themeNames, setTheme } = useTheme() -->
+</DpThemeProvider>
+
+<!-- 浮层与整页主题（Portal 需要 document 级属性） -->
+<DpConfigProvider :comp="{ applyTo: 'document' }">
+  <DpThemeToggle />
 </DpConfigProvider>
 
 <!-- 暗色主题（任意容器） -->
 <section data-dp-theme="dark">
   <DpButton type="primary">提交</DpButton>
 </section>
+```
+
+函数式方式（须位于 Provider 内，只追加令牌覆盖）：
+
+```vue
+<script setup lang="ts">
+import { useTheme } from '@dp_ui/core'
+
+useTheme({ themeOverrides: { 'color-accent': 'oklch(52% 0.18 268)' } })
+</script>
+```
+
+全局配置（数据参数，作为所有 Provider 的默认值）：
+
+```ts
+import { createApp } from 'vue'
+import DpUi from '@dp_ui/core'
+
+createApp(App)
+  .use(DpUi, {
+    themes: { ocean: { className: 'theme-ocean' }, default: {} },
+    defaultTheme: 'ocean',
+    mode: 'system',
+    persist: false,
+  })
+  .mount('#app')
+```
+
+```vue
+<template>
+  <DpThemeProvider :comp="{ themes: { ocean: { className: 'theme-ocean' } }, defaultTheme: 'ocean' }">
+    <DpButton :theme="{ variant: 'primary' }">提交</DpButton>
+  </DpThemeProvider>
+</template>
+
+<style>
+/* 样式块内书写令牌：IDE 提供 CSS 补全、取色器与变量预览 */
+.theme-ocean {
+  --dp-color-primary: oklch(55% 0.16 240);
+  --dp-color-accent: oklch(55% 0.16 240);
+  --dp-radius: 10px;
+}
+</style>
 ```
 
 ## 目录结构
@@ -112,6 +180,7 @@ src/
 ├── index.ts                # 主入口：全量 install + 具名导出
 ├── page/                   # Page 层：DpPage（容器）+ DpLayoutBasic/Sider + usePage
 ├── panel/                  # Panel 层：DpPanel + usePanel
+├── theme/                  # 主题模块：Provider / ThemeSwitch / ThemeToggle + useTheme / useThemeHost / themeConfig
 ├── components/
 │   ├── categories.ts       # 组件分类元数据（与 Naive UI 分类一致）
 │   ├── common/             # 通用：avatar / button / card / accordion / divider / icon / tag
@@ -123,7 +192,7 @@ src/
 │   ├── auth/               # 权限：DpAuth / useAuth / setAuthCodes / v-auth
 │   ├── provide/            # 上下文注入：DpProvide / useInject
 │   ├── lazy/               # 延迟渲染：DpLazy
-│   └── config/             # 配置注入：DpConfigProvider / useTheme
+│   └── config/             # 配置：DpConfigProvider（纯数据参数主题宿主）
 ├── directives/             # 指令：v-auth
 ├── tokens/                 # 设计令牌（亮/暗）+ presetDpUi
 ├── styles/index.css        # 全局 reset + --dp-* CSS 变量 + 暗色主题 + 工具类
@@ -131,7 +200,7 @@ src/
 └── utils/                  # withInstall / createInstaller
 ```
 
-`components/categories.ts` 导出 `dpComponentCategories`（Common / Data Input / Data Display / Navigation / Feedback / Layout / Capability / Page Structure）与 `findComponentCategory`，安装顺序、文档侧边栏与分类元数据保持一致。
+`components/categories.ts` 导出 `dpComponentCategories`（Common / Data Input / Data Display / Navigation / Feedback / Layout / Capability / Theme / Page Structure）与 `findComponentCategory`，安装顺序、文档侧边栏与分类元数据保持一致。
 
 ### 组件能力对齐（Naive UI）
 

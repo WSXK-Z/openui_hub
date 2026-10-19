@@ -501,6 +501,8 @@ import DpButton from "@dp_ui/core/components/button";
 - `src/tokens/` 定义设计令牌：OKLch 语义色（`bg` / `surface*` / `fg*` / `muted` / `border*` / `accent*` / `brass` / `ok` / `warn` / `danger` / `info`）、4px 间距阶梯、11 级字号、圆角（xs/sm/md/lg/xl）、三级语义阴影、焦点环、动效时长与缓动。
 - 取值与使用规则见 [DESIGN_SYSTEM_CORE.md](./DESIGN_SYSTEM_CORE.md)。
 - 亮/暗双主题通过 `data-dp-theme="dark"` 在任意容器上切换，组件无需条件样式。
+- 主题模式由全局主题配置或 `DpConfigProvider` / `DpThemeProvider` 的 `comp.mode` 管理：`light` / `dark` / `system`（跟随系统），可选 localStorage 持久化与 `applyTo="document"`（Portal 浮层）；`DpThemeSwitch` / `DpThemeToggle` 调用同一控制器。
+- 主题数据可用纯数据参数配置：`app.use(DpUi, { themes, defaultTheme, mode })` 作为全局默认值，`DpConfigProvider` / `DpThemeProvider` 的 `comp` 覆盖它；`useTheme` 与主题组件必须位于 Provider 作用域内。
 - 封装为 **`presetDpUi`**（一个 UnoCSS preset），供使用方在 `uno.config.ts` 中继承：
 
 ```ts
@@ -601,6 +603,13 @@ dp_ui/                                   # pnpm workspace 根
     │   │   │   ├── panelContext.ts
     │   │   │   ├── usePanel.ts
     │   │   │   └── index.ts
+    │   │   ├── theme/                   # ── Theme 层 ──
+    │   │   │   ├── DpThemeProvider.vue  # 多主题托管与作用域
+    │   │   │   ├── DpThemeSwitch.vue    # 三段主题切换
+    │   │   │   ├── DpThemeToggle.vue    # 单按钮浅深切换
+    │   │   │   ├── themeMode.ts         # createThemeController
+    │   │   │   ├── themeContext.ts      # useTheme / useThemeController
+    │   │   │   └── index.ts
     │   │   ├── components/              # ── Component 层（按功能分类，不再分 ui/behavior）──
     │   │   │   ├── categories.ts        # 组件分类元数据（Common / Data Input / …）
     │   │   │   ├── common/              # 通用：avatar/button/card/accordion/divider/icon/tag…
@@ -616,12 +625,13 @@ dp_ui/                                   # pnpm workspace 根
     │   │   │   ├── auth/                # 权限（业务扩展）：DpAuth.vue + useAuth.ts
     │   │   │   ├── provide/             # 上下文注入（业务扩展）：DpProvide / useInject
     │   │   │   ├── lazy/                # 延迟渲染：DpLazy
-    │   │   │   └── config/              # 配置注入：DpConfigProvider / useTheme
+    │   │   │   └── config/              # 配置注入：DpConfigProvider
     │   │   ├── directives/              # 指令形态（v-auth / v-loading…）
     │   │   │   ├── auth.ts
     │   │   │   └── index.ts
     │   │   ├── composables/             # 共享组合式函数
     │   │   │   ├── useTheme.ts
+    │   │   │   ├── useScope.ts          # 透明作用域渲染组件（无包裹元素）
     │   │   │   ├── useBreakpoint.ts
     │   │   │   ├── useLocale.ts
     │   │   │   └── index.ts

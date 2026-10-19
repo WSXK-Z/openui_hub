@@ -655,7 +655,7 @@
 ### 12.1 落地检查清单
 
 - [ ] 组件只引用语义 Token，无原始色阶与硬编码色值。
-- [ ] 主题切换通过 `data-theme="light|dark"` 完成，组件无需条件样式。
+- [ ] 主题切换通过 `data-dp-theme="light|dark"` 与 `DpConfigProvider` 的 `comp.mode` 完成，组件无需条件样式。
 - [ ] 所有可交互元素定义 hover / focus-visible / active / disabled 四态。
 - [ ] 间距、字号、圆角取自阶梯值。
 - [ ] 正文对比度 ≥ 4.5:1，非文本元素 ≥ 3:1。
