@@ -3,5 +3,5 @@ import _DpPanel from './DpPanel.vue'
 
 export const DpPanel = withInstall(_DpPanel)
 export default DpPanel
-export type { DpPanelComp, DpPanelProps } from './DpPanel.vue'
+export type { DpPanelComp, DpPanelInst, DpPanelProps, DpPanelState } from './DpPanel.vue'
 export * from './panelContext'

@@ -14,7 +14,8 @@ const { rootAttrs } = useDpProps<DpLayoutSiderComp>(props)
 </script>
 
 <template>
-    <div v-bind="rootAttrs" class="dp-layout dp-layout--sider flex min-h-screen">
+    <div v-bind="rootAttrs"
+        class="dp-layout dp-layout--sider flex min-h-screen bg-[var(--dp-color-bg)] text-[var(--dp-color-fg)]">
         <aside v-if="$slots.sider"
             class="dp-layout__sider w-60 shrink-0 border-r border-[var(--dp-color-border)] bg-[var(--dp-color-surface)]">
             <slot name="sider" />
@@ -24,7 +25,7 @@ const { rootAttrs } = useDpProps<DpLayoutSiderComp>(props)
                 class="dp-layout__header sticky top-0 z-[100] border-b border-[var(--dp-color-border)] bg-[var(--dp-color-surface)]">
                 <slot name="header" />
             </header>
-            <main class="dp-layout__main flex-1 p-4">
+            <main class="dp-layout__main flex-1 p-6">
                 <slot />
             </main>
         </div>

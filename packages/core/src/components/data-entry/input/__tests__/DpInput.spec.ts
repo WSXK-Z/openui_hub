@@ -20,4 +20,20 @@ describe('DpInput', () => {
     const wrapper = mount(DpInput, { props: { comp: { label: '用户名' } } })
     expect(wrapper.text()).toContain('用户名')
   })
+
+  it('applies maxlength and shows character count', () => {
+    const wrapper = mount(DpInput, {
+      props: { modelValue: 'abc', comp: { maxlength: 10, showCount: true } },
+    })
+    expect(wrapper.find('input').attributes('maxlength')).toBe('10')
+    expect(wrapper.find('.dp-input__count').text()).toContain('3/10')
+  })
+
+  it('renders prefix and suffix slots', () => {
+    const wrapper = mount(DpInput, {
+      slots: { prefix: '￥', suffix: '元' },
+    })
+    expect(wrapper.find('.dp-input__prefix').text()).toBe('￥')
+    expect(wrapper.find('.dp-input__suffix').text()).toBe('元')
+  })
 })

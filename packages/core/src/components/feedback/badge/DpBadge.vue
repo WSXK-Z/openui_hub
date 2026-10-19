@@ -38,7 +38,7 @@ const supClasses = computed(() => [
     'dp-badge__sup absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 bg-[var(--dp-color-danger)]',
     c.value.dot
         ? 'dp-badge__sup--dot h-2 w-2 min-w-0 rounded-full'
-        : 'min-w-[18px] min-h-[18px] px-1.5 text-xs leading-[18px] text-white rounded-[9px]',
+        : 'min-w-[18px] min-h-[18px] px-1.5 text-xs leading-[18px] text-[var(--dp-color-bg)] rounded-[9px]',
 ])
 
 const badgeStyle = computed(() => (c.value.color ? { backgroundColor: c.value.color } : null))

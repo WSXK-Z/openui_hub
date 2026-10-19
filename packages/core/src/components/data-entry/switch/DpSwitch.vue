@@ -25,10 +25,10 @@ const checked = defineModel<boolean>({ default: false })
     <label v-bind="rootAttrs" class="dp-switch-wrapper inline-flex cursor-pointer items-center gap-2">
         <SwitchRoot :model-value="checked" :disabled="c.disabled"
             @update:model-value="(v: unknown) => (checked = v === true)"
-            class="dp-switch inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-transparent transition-colors outline-none data-[state=checked]:bg-[var(--dp-color-primary)] data-[state=unchecked]:bg-[color-mix(in_srgb,var(--dp-color-border)_70%,transparent)] disabled:cursor-not-allowed disabled:opacity-55">
+            class="dp-switch inline-flex h-[22px] w-10 shrink-0 items-center rounded-full border border-[var(--dp-color-border-strong)] bg-[var(--dp-color-surface-3)] p-[2px] transition-[background-color,border-color,box-shadow] duration-[200ms] outline-none data-[state=checked]:border-[var(--dp-color-accent)] data-[state=checked]:bg-[var(--dp-color-accent)] focus-visible:shadow-[var(--dp-ring)] disabled:cursor-not-allowed disabled:opacity-50">
             <SwitchThumb
-                class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+                class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--dp-color-surface)] shadow-[var(--dp-shadow-1)] transition-transform duration-[200ms] ease-[var(--dp-ease-enter)] data-[state=checked]:translate-x-[18px] data-[state=unchecked]:translate-x-0" />
         </SwitchRoot>
-        <span v-if="c.label" class="text-sm">{{ c.label }}</span>
+        <span v-if="c.label" class="text-sm text-[var(--dp-color-fg-2)]">{{ c.label }}</span>
     </label>
 </template>

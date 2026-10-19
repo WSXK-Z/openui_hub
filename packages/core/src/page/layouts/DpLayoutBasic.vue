@@ -14,16 +14,17 @@ const { rootAttrs } = useDpProps<DpLayoutBasicComp>(props)
 </script>
 
 <template>
-    <div v-bind="rootAttrs" class="dp-layout dp-layout--basic flex min-h-screen flex-col">
+    <div v-bind="rootAttrs"
+        class="dp-layout dp-layout--basic flex min-h-screen flex-col bg-[var(--dp-color-bg)] text-[var(--dp-color-fg)]">
         <header v-if="$slots.header"
             class="dp-layout__header sticky top-0 z-[100] border-b border-[var(--dp-color-border)] bg-[var(--dp-color-surface)]">
             <slot name="header" />
         </header>
-        <main class="dp-layout__main flex-1 p-4">
+        <main class="dp-layout__main flex-1 p-6">
             <slot />
         </main>
         <footer v-if="$slots.footer"
-            class="dp-layout__footer border-t border-[var(--dp-color-border)] bg-[var(--dp-color-surface)]">
+            class="dp-layout__footer border-t border-[var(--dp-color-border)] bg-[var(--dp-color-surface)] text-[var(--dp-color-fg-2)]">
             <slot name="footer" />
         </footer>
     </div>

@@ -30,9 +30,9 @@ function onInput(event: Event) {
 
 <template>
     <div v-bind="rootAttrs" class="dp-textarea flex w-full flex-col gap-1">
-        <label v-if="c.label" class="text-[13px] text-[var(--dp-color-text-secondary)]">{{ c.label }}</label>
+        <label v-if="c.label" class="text-xs font-medium text-[var(--dp-color-fg-2)]">{{ c.label }}</label>
         <textarea
-            class="dp-textarea__inner w-full rounded-[var(--dp-radius)] border border-[var(--dp-color-border)] bg-[var(--dp-color-surface)] p-3 text-sm outline-none transition-colors focus:border-[var(--dp-color-primary)] disabled:opacity-55"
+            class="dp-textarea__inner w-full rounded-[var(--dp-radius)] border border-[var(--dp-color-border-strong)] bg-[var(--dp-color-surface)] p-3 text-sm text-[var(--dp-color-fg)] outline-none transition-[border-color,box-shadow] duration-[140ms] placeholder:text-[var(--dp-color-muted)] hover:border-[var(--dp-color-fg-2)] focus:border-[var(--dp-color-accent)] focus:shadow-[var(--dp-ring)] disabled:cursor-not-allowed disabled:bg-[var(--dp-color-surface-2)] disabled:text-[var(--dp-color-muted)]"
             :class="{ 'resize-y': c.resize, 'resize-none': !c.resize }" :value="model"
             :placeholder="c.placeholder" :disabled="c.disabled" :readonly="c.readonly" :rows="c.rows"
             @input="onInput" />

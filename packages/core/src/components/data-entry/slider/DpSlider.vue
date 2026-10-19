@@ -34,11 +34,10 @@ function onValue(value: number[] | undefined) {
         :disabled="c.disabled"
         class="dp-slider relative flex h-4 w-full max-w-xs cursor-pointer touch-none select-none items-center"
         @update:model-value="onValue">
-        <SliderTrack
-            class="relative h-1.5 grow rounded-full bg-[color-mix(in_srgb,var(--dp-color-border)_70%,transparent)]">
-            <SliderRange class="absolute h-full rounded-full bg-[var(--dp-color-primary)]" />
+        <SliderTrack class="relative h-1.5 grow rounded-full bg-[var(--dp-color-surface-3)]">
+            <SliderRange class="absolute h-full rounded-full bg-[var(--dp-color-accent)]" />
         </SliderTrack>
         <SliderThumb
-            class="block h-4 w-4 rounded-full border-2 border-[var(--dp-color-primary)] bg-[var(--dp-color-surface)] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--dp-color-primary)_40%,transparent)]" />
+            class="block h-4 w-4 rounded-full border-2 border-[var(--dp-color-accent)] bg-[var(--dp-color-surface)] shadow-[var(--dp-shadow-1)] outline-none focus-visible:shadow-[var(--dp-ring)]" />
     </SliderRoot>
 </template>

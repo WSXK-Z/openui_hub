@@ -1,6 +1,7 @@
 // UnoCSS：build 模式要求入口显式导入 'uno.css' 才会生成原子类 CSS（dist/style.css）
 import 'uno.css'
 import './styles/index.css'
+import './styles/themes/cool-neutral.css'
 
 import type { Plugin } from 'vue'
 import {
@@ -49,56 +50,56 @@ import { DpPanel } from './panel'
 import { createInstaller } from './utils'
 
 const components = [
-  // 通用
+  // 通用 Common
+  DpAvatar,
   DpButton,
+  DpCard,
+  DpAccordion,
+  DpDivider,
   DpIcon,
   DpTag,
-  DpDivider,
-  DpCard,
-  DpAvatar,
-  // 布局
-  DpSpace,
-  DpGrid,
-  DpFlex,
-  // 导航
-  DpTabs,
-  DpBreadcrumb,
-  DpSteps,
-  DpPagination,
-  // 数据录入
-  DpInput,
-  DpTextarea,
-  DpInputNumber,
-  DpSwitch,
+  // 数据录入 Data Input
   DpCheckbox,
+  DpInput,
+  DpInputNumber,
   DpRadio,
   DpSelect,
   DpSlider,
-  DpToggle,
+  DpSwitch,
   DpTagsInput,
-  // 数据展示
-  DpTable,
+  DpTextarea,
+  DpToggle,
+  // 数据展示 Data Display
   DpEmpty,
-  DpAccordion,
-  // 反馈
-  DpBadge,
-  DpTooltip,
-  DpPopover,
+  DpTable,
+  // 导航 Navigation
+  DpBreadcrumb,
+  DpPagination,
+  DpSteps,
+  DpTabs,
+  // 反馈 Feedback
   DpAlert,
-  DpSpin,
-  DpSkeleton,
-  DpProgress,
+  DpBadge,
   DpModal,
-  // 权限 / 上下文注入 / 延迟渲染 / 配置（能力类）
+  DpPopover,
+  DpProgress,
+  DpSkeleton,
+  DpSpin,
+  DpTooltip,
+  // 布局 Layout
+  DpFlex,
+  DpGrid,
+  DpSpace,
+  // 能力 Capability
   DpAuth,
-  DpProvide,
-  DpLazy,
   DpConfigProvider,
-  // 三层结构
+  DpLazy,
+  DpProvide,
+  // 页面结构 Page Structure
   DpPage,
+  DpPanel,
   DpLayoutBasic,
   DpLayoutSider,
-  DpPanel,
 ]
 
 /** 全量插件：`app.use(DpUi)` 注册全部组件与指令 */

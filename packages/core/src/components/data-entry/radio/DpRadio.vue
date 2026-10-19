@@ -8,6 +8,7 @@ defineOptions({ name: 'DpRadio', inheritAttrs: false })
 export interface DpRadioOption {
     label: string
     value: string | number
+    disabled?: boolean
 }
 
 export interface DpRadioComp {
@@ -36,12 +37,12 @@ function onChange(value: unknown) {
         @update:model-value="onChange"
         class="dp-radio-group inline-flex" :class="c.vertical ? 'flex-col gap-2' : 'flex-row flex-wrap gap-4'">
         <label v-for="option in c.options" :key="String(option.value)"
-            class="inline-flex cursor-pointer items-center gap-2">
-            <RadioGroupItem :value="String(option.value)"
-                class="dp-radio inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--dp-color-border)] bg-[var(--dp-color-surface)] outline-none transition-colors data-[state=checked]:border-[var(--dp-color-primary)] disabled:cursor-not-allowed disabled:opacity-55">
-                <RadioGroupIndicator class="block h-2.5 w-2.5 rounded-full bg-[var(--dp-color-primary)]" />
+            class="inline-flex items-center gap-2" :class="option.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'">
+            <RadioGroupItem :value="String(option.value)" :disabled="option.disabled"
+                class="dp-radio inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--dp-color-border-strong)] bg-[var(--dp-color-surface)] outline-none transition-[border-color,box-shadow] duration-[140ms] data-[state=checked]:border-[var(--dp-color-accent)] focus-visible:shadow-[var(--dp-ring)] disabled:cursor-not-allowed disabled:opacity-50">
+                <RadioGroupIndicator class="block h-2.5 w-2.5 rounded-full bg-[var(--dp-color-accent)]" />
             </RadioGroupItem>
-            <span class="text-sm">{{ option.label }}</span>
+            <span class="text-sm text-[var(--dp-color-fg-2)]">{{ option.label }}</span>
         </label>
     </RadioGroupRoot>
 </template> 

@@ -1,32 +1,114 @@
 /*
  * @dp_ui/core 基础样式：全局 reset + 设计令牌 CSS 变量（`--dp-*`）。
- * 令牌变量遵循 CSS 变量继承，外部可在任意层级覆盖（见设计文档 §8.4）。
+ * 令牌变量遵循 CSS 变量继承，外部可在任意层级覆盖（见 docs/DESIGN_SYSTEM_CORE.md）。
  */
 :root {
-  --dp-color-primary: #3b82f6;
-  --dp-color-primary-hover: #2563eb;
-  --dp-color-success: #22c55e;
-  --dp-color-success-hover: #16a34a;
-  --dp-color-warning: #f59e0b;
-  --dp-color-warning-hover: #d97706;
-  --dp-color-danger: #ef4444;
-  --dp-color-danger-hover: #dc2626;
-  --dp-color-info: #06b6d4;
-  --dp-color-info-hover: #0891b2;
-  --dp-color-surface: #ffffff;
-  --dp-color-text: #1f2937;
-  --dp-color-text-secondary: #6b7280;
-  --dp-color-border: #e5e7eb;
-  --dp-color-border-hover: #d1d5db;
-  --dp-radius: 6px;
-  --dp-radius-sm: 4px;
-  --dp-radius-md: 8px;
-  --dp-radius-lg: 12px;
-  --dp-size-btn-h-sm: 32px;
-  --dp-size-btn-h: 40px;
-  --dp-size-btn-h-lg: 48px;
+  /* 页面与表面 */
+  --dp-color-bg: oklch(99.2% 0.002 255);
+  --dp-color-surface: oklch(100% 0 0);
+  --dp-color-surface-2: oklch(97.4% 0.004 255);
+  --dp-color-surface-3: oklch(95.2% 0.006 255);
+  /* 文字层级 */
+  --dp-color-fg: oklch(17% 0.015 265);
+  --dp-color-fg-2: oklch(40% 0.012 262);
+  --dp-color-muted: oklch(56% 0.01 260);
+  /* 描边 */
+  --dp-color-border: oklch(91% 0.006 260);
+  --dp-color-border-strong: oklch(83% 0.008 260);
+  /* 主色与状态色 */
+  --dp-color-accent: oklch(50% 0.17 268);
+  --dp-color-accent-hover: oklch(45% 0.18 268);
+  --dp-color-accent-soft: oklch(95.5% 0.025 268);
+  --dp-color-accent-fg: oklch(99% 0.005 268);
+  --dp-color-brass: oklch(60% 0.1 70);
+  --dp-color-ok: oklch(56% 0.14 155);
+  --dp-color-warn: oklch(68% 0.14 75);
+  --dp-color-danger: oklch(55% 0.18 25);
+  --dp-color-info: oklch(58% 0.12 240);
+  /* 兼容别名 */
+  --dp-color-primary: oklch(50% 0.17 268);
+  --dp-color-primary-hover: oklch(45% 0.18 268);
+  --dp-color-success: oklch(56% 0.14 155);
+  --dp-color-success-hover: oklch(52% 0.14 155);
+  --dp-color-warning: oklch(68% 0.14 75);
+  --dp-color-warning-hover: oklch(62% 0.14 75);
+  --dp-color-danger-hover: oklch(48% 0.18 25);
+  --dp-color-info-hover: oklch(52% 0.12 240);
+  --dp-color-text: oklch(17% 0.015 265);
+  --dp-color-text-secondary: oklch(40% 0.012 262);
+  --dp-color-border-hover: oklch(83% 0.008 260);
+  /* 圆角 */
+  --dp-radius-xs: 4px;
+  --dp-radius-sm: 6px;
+  --dp-radius: 10px;
+  --dp-radius-md: 10px;
+  --dp-radius-lg: 14px;
+  --dp-radius-xl: 20px;
+  --dp-radius-full: 999px;
+  /* 阴影与焦点环 */
+  --dp-shadow-1: 0 1px 2px oklch(20% 0.02 265 / 0.06), 0 1px 1px oklch(20% 0.02 265 / 0.04);
+  --dp-shadow-2: 0 4px 14px -4px oklch(20% 0.02 265 / 0.12), 0 1px 3px oklch(20% 0.02 265 / 0.06);
+  --dp-shadow-3: 0 18px 44px -16px oklch(20% 0.02 265 / 0.22),
+    0 4px 12px -4px oklch(20% 0.02 265 / 0.08);
+  --dp-ring: 0 0 0 3px oklch(50% 0.17 268 / 0.22);
+  /* 尺寸 */
+  --dp-size-btn-h-sm: 30px;
+  --dp-size-btn-h: 38px;
+  --dp-size-btn-h-lg: 46px;
   --dp-space-btn-x: 16px;
-  --dp-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* 动效 */
+  --dp-dur-instant: 80ms;
+  --dp-dur-fast: 140ms;
+  --dp-dur-base: 200ms;
+  --dp-dur-slow: 320ms;
+  --dp-dur-slower: 480ms;
+  --dp-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dp-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --dp-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* 字体 */
+  --dp-font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+    'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --dp-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text',
+    'Segoe UI', system-ui, sans-serif;
+  --dp-font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+
+/* 暗色主题：容器设置 data-dp-theme="dark" 后，子树整体切换 */
+[data-dp-theme='dark'] {
+  color-scheme: dark;
+  --dp-color-bg: oklch(15.5% 0.012 265);
+  --dp-color-surface: oklch(18.5% 0.014 265);
+  --dp-color-surface-2: oklch(22% 0.015 265);
+  --dp-color-surface-3: oklch(26% 0.016 265);
+  --dp-color-fg: oklch(95% 0.005 260);
+  --dp-color-fg-2: oklch(80% 0.01 260);
+  --dp-color-muted: oklch(63% 0.012 260);
+  --dp-color-border: oklch(27% 0.014 265);
+  --dp-color-border-strong: oklch(36% 0.016 265);
+  --dp-color-accent: oklch(70% 0.14 268);
+  --dp-color-accent-hover: oklch(76% 0.13 268);
+  --dp-color-accent-soft: oklch(24% 0.05 268);
+  --dp-color-accent-fg: oklch(16% 0.02 268);
+  --dp-color-brass: oklch(72% 0.09 70);
+  --dp-color-ok: oklch(70% 0.13 155);
+  --dp-color-warn: oklch(78% 0.13 75);
+  --dp-color-danger: oklch(66% 0.16 25);
+  --dp-color-info: oklch(70% 0.11 240);
+  --dp-color-primary: oklch(70% 0.14 268);
+  --dp-color-primary-hover: oklch(76% 0.13 268);
+  --dp-color-success: oklch(70% 0.13 155);
+  --dp-color-success-hover: oklch(64% 0.13 155);
+  --dp-color-warning: oklch(78% 0.13 75);
+  --dp-color-warning-hover: oklch(72% 0.13 75);
+  --dp-color-danger-hover: oklch(60% 0.16 25);
+  --dp-color-info-hover: oklch(64% 0.11 240);
+  --dp-color-text: oklch(95% 0.005 260);
+  --dp-color-text-secondary: oklch(80% 0.01 260);
+  --dp-color-border-hover: oklch(36% 0.016 265);
+  --dp-shadow-1: 0 1px 2px oklch(0% 0 0 / 0.4);
+  --dp-shadow-2: 0 6px 18px -6px oklch(0% 0 0 / 0.55);
+  --dp-shadow-3: 0 24px 60px -20px oklch(0% 0 0 / 0.7);
+  --dp-ring: 0 0 0 3px oklch(70% 0.14 268 / 0.28);
 }
 
 *,
@@ -42,9 +124,13 @@
 
 body {
   margin: 0;
-  color: var(--dp-color-text);
-  background-color: var(--dp-color-surface);
-  line-height: 1.5;
+  font-family: var(--dp-font-family);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--dp-color-fg);
+  background-color: var(--dp-color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1,
@@ -69,19 +155,79 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+::selection {
+  background: var(--dp-color-accent-soft);
+  color: var(--dp-color-fg);
+}
+
+/* 统一焦点环：组件内可用 outline-none + 自身样式覆盖 */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--dp-ring);
+  border-radius: var(--dp-radius-xs);
+}
+
+/* 数值与代码的等宽排版工具 */
+.dp-mono {
+  font-family: var(--dp-font-mono);
+}
+
+.dp-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 骨架屏：底块 + 横向高光扫过 */
+.dp-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--dp-color-surface-3);
+}
+
+.dp-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--dp-color-surface) 60%, transparent),
+    transparent
+  );
+  animation: dp-shimmer 1.6s infinite;
+}
+
 /* 组件通用关键帧（供 unocss 任意值动画类与内联动画引用） */
 @keyframes dp-spin {
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes dp-pulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes dp-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

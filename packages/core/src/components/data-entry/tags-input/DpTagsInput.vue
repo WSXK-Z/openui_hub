@@ -36,16 +36,16 @@ const tags = defineModel<string[]>({ default: () => [] })
     <!-- 基于 reka-ui TagsInput：标签化输入（v-model string[]） -->
     <TagsInputRoot v-bind="rootAttrs" v-model="tags" :disabled="c.disabled" :max="c.max" :add-on-paste="c.addOnPaste"
         :add-on-blur="c.addOnBlur"
-        class="dp-tags-input flex w-full flex-wrap items-center gap-1 rounded-[var(--dp-radius)] border border-[var(--dp-color-border)] bg-[var(--dp-color-surface)] px-2 py-1 text-sm transition-colors focus-within:border-[var(--dp-color-primary)]">
+        class="dp-tags-input flex w-full flex-wrap items-center gap-1 rounded-[var(--dp-radius)] border border-[var(--dp-color-border-strong)] bg-[var(--dp-color-surface)] px-2 py-1 text-sm text-[var(--dp-color-fg)] transition-[border-color,box-shadow] duration-[140ms] hover:border-[var(--dp-color-fg-2)] focus-within:border-[var(--dp-color-accent)] focus-within:shadow-[var(--dp-ring)]">
         <TagsInputItem v-for="t in tags" :key="t" :value="t"
-            class="dp-tags-input__item inline-flex items-center gap-1 rounded-[var(--dp-radius-sm)] bg-[color-mix(in_srgb,var(--dp-color-primary)_10%,transparent)] px-2 py-0.5 text-[var(--dp-color-primary)]">
-            <TagsInputItemText class="text-sm">{{ t }}</TagsInputItemText>
+            class="dp-tags-input__item inline-flex items-center gap-1 rounded-[var(--dp-radius-sm)] bg-[var(--dp-color-accent-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--dp-color-accent)]">
+            <TagsInputItemText class="text-[11px]">{{ t }}</TagsInputItemText>
             <TagsInputItemDelete :aria-label="`移除 ${t}`"
-                class="inline-flex h-4 w-4 items-center justify-center rounded text-xs leading-none hover:bg-[color-mix(in_srgb,var(--dp-color-primary)_20%,transparent)]">
+                class="inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded bg-transparent text-xs leading-none hover:bg-[color-mix(in_srgb,var(--dp-color-accent)_16%,transparent)]">
                 ×
             </TagsInputItemDelete>
         </TagsInputItem>
         <TagsInputInput :placeholder="c.placeholder"
-            class="min-w-20 flex-1 bg-transparent px-1 py-0.5 text-sm outline-none placeholder:text-[var(--dp-color-text-secondary)]" />
+            class="min-w-20 flex-1 bg-transparent px-1 py-0.5 text-sm outline-none placeholder:text-[var(--dp-color-muted)]" />
     </TagsInputRoot>
 </template>

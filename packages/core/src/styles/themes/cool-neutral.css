@@ -1,0 +1,177 @@
+/*
+ * “冷调中性色 · 发丝描边 · 分层阴影 · 紧凑圆角”主题适配层。
+ *
+ * 令牌来源：Open Design 设计系统包 ds-design-system（cool-neutral-design-system-package-2.html）。
+ * 用法：在任意容器上设置 data-dp-theme="cool-neutral" 或 "cool-neutral-dark"，
+ * 子树内的 @dp_ui/core 组件即切换为该设计系统的令牌，无需修改组件。
+ */
+
+[data-dp-theme='cool-neutral'] {
+  color-scheme: light;
+
+  --dp-color-bg: #fafafb;
+  --dp-color-surface: #ffffff;
+  --dp-color-surface-2: #f4f5f7;
+  --dp-color-surface-3: #eceef1;
+
+  --dp-color-fg: #1b1e26;
+  --dp-color-fg-2: #3b404d;
+  --dp-color-muted: #6d7483;
+
+  --dp-color-border: #e4e6eb;
+  --dp-color-border-strong: #d3d6dd;
+
+  --dp-color-accent: #3364f0;
+  --dp-color-accent-hover: #2a55d6;
+  --dp-color-accent-soft: #eef2ff;
+  --dp-color-accent-fg: #ffffff;
+  --dp-color-accent-2: #0e8f9c;
+  --dp-color-accent-2-soft: #e6f6f7;
+
+  --dp-color-success: #16875a;
+  --dp-color-success-soft: #e7f5ef;
+  --dp-color-warning: #a86a12;
+  --dp-color-warning-soft: #fbf1de;
+  --dp-color-danger: #d1392f;
+  --dp-color-danger-soft: #fceceb;
+  --dp-color-info: #0e8f9c;
+  --dp-color-info-soft: #e6f6f7;
+  --dp-color-brass: #a86a12;
+
+  /* 兼容别名 */
+  --dp-color-primary: var(--dp-color-accent);
+  --dp-color-primary-hover: var(--dp-color-accent-hover);
+  --dp-color-success-hover: color-mix(in oklab, var(--dp-color-success) 88%, black);
+  --dp-color-warning-hover: color-mix(in oklab, var(--dp-color-warning) 88%, black);
+  --dp-color-danger-hover: color-mix(in oklab, var(--dp-color-danger) 88%, black);
+  --dp-color-info-hover: color-mix(in oklab, var(--dp-color-info) 88%, black);
+  --dp-color-text: var(--dp-color-fg);
+  --dp-color-text-secondary: var(--dp-color-fg-2);
+  --dp-color-border-hover: var(--dp-color-border-strong);
+
+  /* 圆角：4 / 6 / 8 / 10 / pill */
+  --dp-radius-xs: 4px;
+  --dp-radius-sm: 6px;
+  --dp-radius: 8px;
+  --dp-radius-md: 8px;
+  --dp-radius-lg: 10px;
+  --dp-radius-xl: 10px;
+  --dp-radius-full: 999px;
+
+  /* 分层阴影 */
+  --dp-shadow-1: 0 1px 2px rgba(16, 20, 32, 0.06), 0 1px 1px rgba(16, 20, 32, 0.04);
+  --dp-shadow-2: 0 1px 2px rgba(16, 20, 32, 0.05), 0 4px 10px -2px rgba(16, 20, 32, 0.08);
+  --dp-shadow-3: 0 1px 2px rgba(16, 20, 32, 0.06), 0 18px 44px -10px rgba(16, 20, 32, 0.28);
+  --dp-ring: 0 0 0 3px var(--dp-color-accent-soft);
+
+  /* 紧凑密度 */
+  --dp-size-btn-h-sm: 28px;
+  --dp-size-btn-h: 32px;
+  --dp-size-btn-h-lg: 40px;
+  --dp-space-btn-x: 12px;
+
+  /* 动效 */
+  --dp-dur-instant: 90ms;
+  --dp-dur-fast: 90ms;
+  --dp-dur-base: 140ms;
+  --dp-dur-slow: 200ms;
+  --dp-dur-slower: 320ms;
+  --dp-ease-standard: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dp-ease-enter: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dp-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* 字体 */
+  --dp-font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Display', 'Segoe UI',
+    system-ui, sans-serif;
+  --dp-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue',
+    sans-serif;
+  --dp-font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  font-family: var(--dp-font-family);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--dp-color-fg);
+}
+
+[data-dp-theme='cool-neutral-dark'] {
+  color-scheme: dark;
+
+  --dp-color-bg: #101319;
+  --dp-color-surface: #171a21;
+  --dp-color-surface-2: #1d212a;
+  --dp-color-surface-3: #252a34;
+
+  --dp-color-fg: #f1f3f7;
+  --dp-color-fg-2: #c3c8d2;
+  --dp-color-muted: #969db0;
+
+  --dp-color-border: rgba(255, 255, 255, 0.085);
+  --dp-color-border-strong: rgba(255, 255, 255, 0.17);
+
+  --dp-color-accent: #6f95ff;
+  --dp-color-accent-hover: #8ba9ff;
+  --dp-color-accent-soft: #1b2540;
+  --dp-color-accent-fg: #0a0f1e;
+  --dp-color-accent-2: #4fc3cf;
+  --dp-color-accent-2-soft: #122a2e;
+
+  --dp-color-success: #4cc48d;
+  --dp-color-success-soft: #12271f;
+  --dp-color-warning: #e0a750;
+  --dp-color-warning-soft: #291f12;
+  --dp-color-danger: #f0746a;
+  --dp-color-danger-soft: #2b1716;
+  --dp-color-info: #4fc3cf;
+  --dp-color-info-soft: #122a2e;
+  --dp-color-brass: #e0a750;
+
+  --dp-color-primary: var(--dp-color-accent);
+  --dp-color-primary-hover: var(--dp-color-accent-hover);
+  --dp-color-success-hover: color-mix(in oklab, var(--dp-color-success) 88%, white);
+  --dp-color-warning-hover: color-mix(in oklab, var(--dp-color-warning) 88%, white);
+  --dp-color-danger-hover: color-mix(in oklab, var(--dp-color-danger) 88%, white);
+  --dp-color-info-hover: color-mix(in oklab, var(--dp-color-info) 88%, white);
+  --dp-color-text: var(--dp-color-fg);
+  --dp-color-text-secondary: var(--dp-color-fg-2);
+  --dp-color-border-hover: var(--dp-color-border-strong);
+
+  --dp-radius-xs: 4px;
+  --dp-radius-sm: 6px;
+  --dp-radius: 8px;
+  --dp-radius-md: 8px;
+  --dp-radius-lg: 10px;
+  --dp-radius-xl: 10px;
+  --dp-radius-full: 999px;
+
+  --dp-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  --dp-shadow-2: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  --dp-shadow-3: 0 2px 6px -1px rgba(0, 0, 0, 0.55), 0 22px 52px -10px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --dp-ring: 0 0 0 3px var(--dp-color-accent-soft);
+
+  --dp-size-btn-h-sm: 28px;
+  --dp-size-btn-h: 32px;
+  --dp-size-btn-h-lg: 40px;
+  --dp-space-btn-x: 12px;
+
+  --dp-dur-instant: 90ms;
+  --dp-dur-fast: 90ms;
+  --dp-dur-base: 140ms;
+  --dp-dur-slow: 200ms;
+  --dp-dur-slower: 320ms;
+  --dp-ease-standard: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dp-ease-enter: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dp-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --dp-font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Display', 'Segoe UI',
+    system-ui, sans-serif;
+  --dp-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue',
+    sans-serif;
+  --dp-font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  font-family: var(--dp-font-family);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--dp-color-fg);
+}

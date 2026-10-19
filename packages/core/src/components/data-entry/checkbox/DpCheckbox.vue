@@ -25,11 +25,11 @@ const checked = defineModel<boolean>({ default: false })
     <label v-bind="rootAttrs" class="dp-checkbox-wrapper inline-flex cursor-pointer items-center gap-2">
         <CheckboxRoot :model-value="checked" :disabled="c.disabled"
             @update:model-value="(v: unknown) => (checked = v === true)"
-            class="dp-checkbox inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--dp-radius-sm)] border border-[var(--dp-color-border)] bg-[var(--dp-color-surface)] outline-none transition-colors data-[state=checked]:border-[var(--dp-color-primary)] data-[state=checked]:bg-[var(--dp-color-primary)] disabled:cursor-not-allowed disabled:opacity-55">
-            <CheckboxIndicator class="text-white">
+            class="dp-checkbox inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--dp-radius-xs)] border border-[var(--dp-color-border-strong)] bg-[var(--dp-color-surface)] outline-none transition-[background-color,border-color,box-shadow] duration-[140ms] data-[state=checked]:border-[var(--dp-color-accent)] data-[state=checked]:bg-[var(--dp-color-accent)] focus-visible:shadow-[var(--dp-ring)] disabled:cursor-not-allowed disabled:opacity-50">
+            <CheckboxIndicator class="text-[var(--dp-color-accent-fg)]">
                 <span class="block text-xs leading-none">✓</span>
             </CheckboxIndicator>
         </CheckboxRoot>
-        <span v-if="c.label" class="text-sm">{{ c.label }}</span>
+        <span v-if="c.label" class="text-sm text-[var(--dp-color-fg-2)]">{{ c.label }}</span>
     </label>
 </template>
