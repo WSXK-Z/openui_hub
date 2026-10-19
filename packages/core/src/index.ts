@@ -44,6 +44,7 @@ import {
   DpToggle,
   DpTooltip,
 } from './components'
+import { DpThemeProvider, DpThemeSwitch, DpThemeToggle, provideDpThemeConfig, type DpThemeConfig } from './theme'
 import { vAuth } from './directives'
 import { DpLayoutBasic, DpLayoutSider, DpPage } from './page'
 import { DpPanel } from './panel'
@@ -95,6 +96,10 @@ const components = [
   DpConfigProvider,
   DpLazy,
   DpProvide,
+  // 主题 Theme
+  DpThemeProvider,
+  DpThemeSwitch,
+  DpThemeToggle,
   // 页面结构 Page Structure
   DpPage,
   DpPanel,
@@ -102,13 +107,28 @@ const components = [
   DpLayoutSider,
 ]
 
-/** 全量插件：`app.use(DpUi)` 注册全部组件与指令 */
-export const DpUi: Plugin = createInstaller(components, { auth: vAuth })
+/** 全量插件选项：主题数据参数形式的全局配置 */
+export interface DpUiOptions extends DpThemeConfig {}
+
+/**
+ * 全量插件：`app.use(DpUi, options)` 注册全部组件与指令，并把 `options` 作为主题全局配置。
+ *
+ * @example
+ * app.use(DpUi, {
+ *   themes: { ocean: { className: 'theme-ocean' } },
+ *   defaultTheme: 'ocean',
+ *   mode: 'system',
+ * })
+ */
+export const DpUi: Plugin = createInstaller(components, { auth: vAuth }, (app, options) => {
+    provideDpThemeConfig(app, (options ?? {}) as DpThemeConfig)
+})
 
 export default DpUi
 
 // 具名导出（配合 tree-shaking 实现按需加载）
 export * from './components'
+export * from './theme'
 export * from './page'
 export * from './panel'
 export * from './directives'

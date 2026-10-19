@@ -2,7 +2,7 @@
  * 组件分类元数据（参照 Naive UI 的组件分类方式）。
  *
  * 目录结构与分类保持一致：common / data-entry / data-display / navigation /
- * feedback / layout 以及能力类（auth / provide / lazy / config）；
+ * feedback / layout 以及能力类（auth / provide / lazy / config）、主题（theme）；
  * Page / Panel / Layout* 属于页面结构。
  */
 export type DpComponentCategoryKey =
@@ -13,6 +13,7 @@ export type DpComponentCategoryKey =
     | 'feedback'
     | 'layout'
     | 'capability'
+    | 'theme'
     | 'page-structure'
 
 export interface DpComponentCategory {
@@ -96,6 +97,13 @@ export const dpComponentCategories: readonly DpComponentCategory[] = [
         labelZh: '能力',
         directory: 'src/components',
         components: ['DpAuth', 'DpConfigProvider', 'DpLazy', 'DpProvide'],
+    },
+    {
+        key: 'theme',
+        label: 'Theme',
+        labelZh: '主题',
+        directory: 'src/theme',
+        components: ['DpThemeProvider', 'DpThemeSwitch', 'DpThemeToggle'],
     },
     {
         key: 'page-structure',

@@ -3,6 +3,7 @@
  * 令牌变量遵循 CSS 变量继承，外部可在任意层级覆盖（见 docs/DESIGN_SYSTEM_CORE.md）。
  */
 :root {
+  color-scheme: light;
   /* 页面与表面 */
   --dp-color-bg: oklch(99.2% 0.002 255);
   --dp-color-surface: oklch(100% 0 0);
@@ -74,6 +75,10 @@
 }
 
 /* 暗色主题：容器设置 data-dp-theme="dark" 后，子树整体切换 */
+[data-dp-theme='light'] {
+  color-scheme: light;
+}
+
 [data-dp-theme='dark'] {
   color-scheme: dark;
   --dp-color-bg: oklch(15.5% 0.012 265);

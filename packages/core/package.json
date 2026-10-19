@@ -35,6 +35,11 @@
       "import": "./dist/panel/index.mjs",
       "require": "./dist/panel/index.cjs"
     },
+    "./theme": {
+      "types": "./dist/types/theme/index.d.ts",
+      "import": "./dist/theme/index.mjs",
+      "require": "./dist/theme/index.cjs"
+    },
     "./components/*": {
       "types": "./dist/types/components/*/index.d.ts",
       "import": "./dist/components/*/index.mjs",

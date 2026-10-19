@@ -1,1 +1,3 @@
-export { useTheme, provideThemeContext } from '../components/config/themeContext.ts'
+export { useTheme, useThemeController, provideThemeContext } from '../theme/themeContext.ts'
+export { useScope, applyScopeAttrs } from './useScope.ts'
+export type { DpScopeAttrs } from './useScope.ts'

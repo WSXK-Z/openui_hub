@@ -2,39 +2,40 @@
 import { computed } from 'vue'
 import { useDpProps } from '../../composables/useDpProps.ts'
 import type { DpProps } from '../../types'
-import { provideThemeContext } from './themeContext'
+import { useThemeHost } from '../../theme/useThemeHost'
+import { useScope } from '../../composables/useScope.ts'
+import type { DpThemeHostComp } from '../../theme/themeConfig'
+import type { DpResolvedTheme, DpThemeMode } from '../../theme/themeMode'
 
 defineOptions({ name: 'DpConfigProvider', inheritAttrs: false })
 
-export interface DpConfigProviderComp {
-    /**
-     * 组件级令牌覆盖，键去掉 `--dp-` 前缀。
-     * 例：`{ 'color-primary': '#7c3aed', radius: '10px' }` → `--dp-color-primary` / `--dp-radius`。
-     */
-    themeOverrides: Record<string, string | number>
-}
+/**
+ * 全局配置参数（纯数据）：主题、令牌覆盖与模式配置。
+ * 缺省值来自 `app.use(DpUi, options)` 的全局配置，这里的 `comp` 优先。
+ */
+export type DpConfigProviderComp = DpThemeHostComp
 
 export type DpConfigProviderProps = DpProps<DpConfigProviderComp>
 
+const emit = defineEmits<{
+    (e: 'change', mode: DpThemeMode, resolved: DpResolvedTheme): void
+}>()
+
 const props = defineProps<DpConfigProviderProps>()
 
-const { comp: c, rootAttrs } = useDpProps<DpConfigProviderComp>(props, {
-    compDefaults: { themeOverrides: {} },
+const { rootAttrs } = useDpProps<DpConfigProviderComp>(props)
+
+const { scopeAttrs } = useThemeHost({
+    comp: computed(() => props.comp),
+    rootAttrs,
+    onChange: (_theme, mode, resolved) => emit('change', mode, resolved),
 })
 
-provideThemeContext({ themeOverrides: c.value.themeOverrides })
-
-const vars = computed(() => {
-    const result: Record<string, string> = {}
-    for (const [key, value] of Object.entries(c.value.themeOverrides ?? {})) {
-        result[`--dp-${key}`] = String(value)
-    }
-    return result
-})
+const ThemeScope = useScope('DpConfigProviderScope')
 </script>
 
 <template>
-    <div v-bind="rootAttrs" class="dp-config-provider contents" :style="vars">
+    <ThemeScope :scope-attrs="scopeAttrs">
         <slot />
-    </div>
+    </ThemeScope>
 </template>

@@ -14,7 +14,7 @@ const componentsDir = join(srcDir, 'components')
  * 收集库构建入口：
  * - 主入口 `core`（全量）
  * - 设计令牌 preset `preset-core`
- * - page / panel 子路径
+ * - page / panel / theme 子路径
  * - 每个组件目录（含 .vue 或叶子目录）的子路径
  */
 export function collectEntries(): EntryMap {
@@ -23,6 +23,7 @@ export function collectEntries(): EntryMap {
     'preset-core': join(srcDir, 'tokens', 'presetDpUi.ts'),
     'page/index': join(srcDir, 'page', 'index.ts'),
     'panel/index': join(srcDir, 'panel', 'index.ts'),
+    'theme/index': join(srcDir, 'theme', 'index.ts'),
   }
   walkComponents(componentsDir, entries)
   return entries

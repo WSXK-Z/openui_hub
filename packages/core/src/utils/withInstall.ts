@@ -20,8 +20,9 @@ export function withInstall<T extends Component>(comp: T, name?: string): SFCWit
 export function createInstaller(
   components: Array<Component & Plugin>,
   directives?: Record<string, Directive>,
+  setup?: (app: App, options: unknown) => void,
 ): Plugin {
-  const install = (app: App) => {
+  const install = (app: App, options?: unknown) => {
     for (const comp of components) {
       if (typeof (comp as Plugin).install === 'function') {
         app.use(comp as Plugin)
@@ -34,6 +35,7 @@ export function createInstaller(
         app.directive(name, dir)
       }
     }
+    setup?.(app, options)
   }
   return { install }
 }

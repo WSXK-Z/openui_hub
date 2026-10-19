@@ -8,7 +8,7 @@ import entries from './collect-entries'
  * @dp_ui/core 库模式构建（多入口）：
  * - `core.mjs` / `core.cjs`：全量入口
  * - `components/<分类>/<组件>/index`：按需子路径入口
- * - `page/index`、`panel/index`、`preset-core`：子路径入口
+ * - `page/index`、`panel/index`、`theme/index`、`preset-core`：子路径入口
  * - `style.css`：由 UnoCSS + 库模式提取的全部样式（设计文档 §8.2 策略 A）
  */
 export default defineConfig({
