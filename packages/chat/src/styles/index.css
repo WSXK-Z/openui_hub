@@ -4,30 +4,76 @@
  * 说明：与 @dp_ui/core 同源但独立命名空间（--dpc-*），两个库可共存消费。
  */
 :root {
-  --dpc-color-primary: #3b82f6;
-  --dpc-color-primary-hover: #2563eb;
-  --dpc-color-success: #22c55e;
-  --dpc-color-warning: #f59e0b;
-  --dpc-color-danger: #ef4444;
-  --dpc-color-danger-hover: #dc2626;
-  --dpc-color-info: #06b6d4;
-  --dpc-color-surface: #ffffff;
-  --dpc-color-surface-muted: #f8fafc;
-  --dpc-color-text: #1f2937;
-  --dpc-color-text-secondary: #6b7280;
-  --dpc-color-text-inverse: #ffffff;
-  --dpc-color-border: #e5e7eb;
-  --dpc-color-border-hover: #d1d5db;
-  --dpc-color-active-soft: #eff6ff;
-  --dpc-color-bubble-user: #3b82f6;
-  --dpc-color-bubble-assistant: #f3f4f6;
-  --dpc-color-scrim: rgb(15 23 42 / 0.5);
-  --dpc-color-hover-soft: rgb(0 0 0 / 0.04);
+  /* 画布与表面：冷调蓝灰、白卡片、实色发丝线 */
+  --dpc-color-page: oklch(0.985 0.001 286.376);
+  --dpc-color-canvas: oklch(0.961 0.002 247.84);
+  --dpc-color-surface: oklch(1 0 0);
+  --dpc-color-inset: oklch(0.979 0.002 247.839);
+  --dpc-color-hover: oklch(0.97 0.002 247.839);
+  --dpc-color-hover-2: oklch(0.933 0.003 247.86);
+  --dpc-color-field: oklch(0.961 0.001 286.375);
+  /* 文字层级 */
+  --dpc-color-ink: oklch(0.247 0.006 258.361);
+  --dpc-color-ink-2: oklch(0.506 0.01 264.477);
+  --dpc-color-ink-3: oklch(0.695 0.009 264.505);
+  /* 描边 */
+  --dpc-color-line: oklch(0.946 0.003 264.542);
+  --dpc-color-line-strong: oklch(0.912 0.005 258.326);
+  --dpc-color-line-soft: oklch(0.966 0.002 264.542);
+  /* 主色与语义色 */
+  --dpc-color-accent: oklch(0.626 0.205 254.947);
+  --dpc-color-accent-ink: oklch(0.556 0.187 255.617);
+  --dpc-color-accent-tint: oklch(0.96 0.019 252.878);
+  --dpc-color-primary: oklch(0.626 0.205 254.947);
+  --dpc-color-primary-hover: oklch(0.556 0.187 255.617);
+  --dpc-color-success: oklch(0.603 0.155 150.883);
+  --dpc-color-green: oklch(0.603 0.155 150.883);
+  --dpc-color-green-tint: oklch(0.958 0.017 159.118);
+  --dpc-color-warning: oklch(0.689 0.179 49.902);
+  --dpc-color-orange: oklch(0.689 0.179 49.902);
+  --dpc-color-orange-tint: oklch(0.964 0.021 67.581);
+  --dpc-color-danger: oklch(0.621 0.192 23.042);
+  --dpc-color-red: oklch(0.621 0.192 23.042);
+  --dpc-color-red-tint: oklch(0.956 0.017 17.462);
+  --dpc-color-danger-hover: oklch(0.556 0.19 23.042);
+  --dpc-color-info: oklch(0.626 0.205 254.947);
+  --dpc-color-text: oklch(0.247 0.006 258.361);
+  --dpc-color-text-secondary: oklch(0.506 0.01 264.477);
+  --dpc-color-text-inverse: oklch(0.99 0 0);
+  --dpc-color-border: oklch(0.946 0.003 264.542);
+  --dpc-color-border-hover: oklch(0.912 0.005 258.326);
+  --dpc-color-surface-muted: oklch(0.961 0.002 247.84);
+  /* 激活/选中底 */
+  --dpc-color-active-soft: oklch(0.96 0.019 252.878);
+  /* 气泡 */
+  --dpc-color-bubble-user: oklch(0.626 0.205 254.947);
+  --dpc-color-bubble-assistant: oklch(0.979 0.002 247.839);
+  /* 半透明遮罩 / 悬浮底 */
+  --dpc-color-scrim: oklch(0 0 0 / 0.5);
+  --dpc-color-hover-soft: oklch(0 0 0 / 0.04);
+  /* 浮层与提示 */
+  --dpc-color-tooltip-bg: oklch(0.272 0.008 264.435);
+  --dpc-color-tooltip-fg: oklch(0.976 0.002 247.839);
+  --dpc-color-tooltip-muted: oklch(0.731 0.008 260.731);
+  --dpc-color-tooltip-border: oklch(0.356 0.007 264.474);
+  /* 圆角：chip 6 / control 8 / card 10 / window 14 */
   --dpc-radius: 6px;
   --dpc-radius-sm: 4px;
+  --dpc-radius-chip: 6px;
+  --dpc-radius-control: 8px;
   --dpc-radius-md: 8px;
+  --dpc-radius-card: 10px;
   --dpc-radius-lg: 12px;
+  --dpc-radius-window: 14px;
   --dpc-radius-xl: 16px;
+  /* 阴影：1px 实色描边 + 平滑层叠 */
+  --dpc-shadow-hairline: 0 0 0 1px var(--dpc-color-line);
+  --dpc-shadow-btn: 0 0 0 1px var(--dpc-color-line-strong), 0 1px 2px oklch(0 0 0 / 0.05);
+  --dpc-shadow-card:
+    0 0 0 1px var(--dpc-color-line), 0 1px 2px oklch(0 0 0 / 0.04), 0 2px 6px oklch(0 0 0 / 0.03);
+  --dpc-shadow-raised: 0 0 0 1px var(--dpc-color-line), 0 2px 8px oklch(0 0 0 / 0.06);
+  --dpc-shadow-overlay: 0 0 0 1px var(--dpc-color-line), 0 8px 28px oklch(0 0 0 / 0.12);
+  --dpc-shadow-inset-field: inset 0 1px 2px oklch(0 0 0 / 0.12);
   --dpc-size-control-h: 40px;
   --dpc-size-control-h-sm: 32px;
   --dpc-size-avatar: 32px;
@@ -36,31 +82,66 @@
   --dpc-chat-max-width: 760px;
   --dpc-z-pop: 1000;
   --dpc-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --dpc-font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  --dpc-ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --dpc-ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 /* 暗色主题：容器（如 DpcConfigProvider）设置 data-dpc-theme="dark" 时，
    以该容器为根覆盖下列变量，子树整体切换为暗色（与 tokens/dpcCssVarsDark 对齐）。 */
 [data-dpc-theme='dark'] {
   color-scheme: dark;
-  --dpc-color-primary: #60a5fa;
-  --dpc-color-primary-hover: #3b82f6;
-  --dpc-color-success: #34d399;
-  --dpc-color-warning: #fbbf24;
-  --dpc-color-danger: #f87171;
-  --dpc-color-danger-hover: #ef4444;
-  --dpc-color-info: #22d3ee;
-  --dpc-color-surface: #0f172a;
-  --dpc-color-surface-muted: #1e293b;
-  --dpc-color-text: #e5e7eb;
-  --dpc-color-text-secondary: #94a3b8;
-  --dpc-color-text-inverse: #ffffff;
-  --dpc-color-border: #334155;
-  --dpc-color-border-hover: #475569;
-  --dpc-color-active-soft: rgb(96 165 250 / 0.16);
-  --dpc-color-bubble-user: #3b82f6;
-  --dpc-color-bubble-assistant: #1e293b;
-  --dpc-color-scrim: rgb(0 0 0 / 0.6);
-  --dpc-color-hover-soft: rgb(255 255 255 / 0.06);
+  --dpc-color-page: oklch(0.209 0.004 264.477);
+  --dpc-color-canvas: oklch(0.231 0.004 264.487);
+  --dpc-color-surface: oklch(0.26 0.006 271.191);
+  --dpc-color-inset: oklch(0.243 0.004 264.492);
+  --dpc-color-hover: oklch(0.289 0.006 271.22);
+  --dpc-color-hover-2: oklch(0.318 0.007 274.747);
+  --dpc-color-field: oklch(0.293 0.006 271.223);
+  --dpc-color-ink: oklch(0.964 0.002 247.839);
+  --dpc-color-ink-2: oklch(0.731 0.008 260.731);
+  --dpc-color-ink-3: oklch(0.541 0.01 264.484);
+  --dpc-color-line: oklch(0.308 0.006 258.354);
+  --dpc-color-line-strong: oklch(0.356 0.007 264.474);
+  --dpc-color-line-soft: oklch(0.278 0.006 258.354);
+  --dpc-color-accent: oklch(0.68 0.173 253.301);
+  --dpc-color-accent-ink: oklch(0.788 0.113 248.33);
+  --dpc-color-accent-tint: oklch(0.68 0.173 253.301 / 0.16);
+  --dpc-color-primary: oklch(0.68 0.173 253.301);
+  --dpc-color-primary-hover: oklch(0.626 0.205 254.947);
+  --dpc-color-success: oklch(0.705 0.154 153.814);
+  --dpc-color-green: oklch(0.705 0.154 153.814);
+  --dpc-color-green-tint: oklch(0.705 0.154 153.814 / 0.14);
+  --dpc-color-warning: oklch(0.746 0.156 55.642);
+  --dpc-color-orange: oklch(0.746 0.156 55.642);
+  --dpc-color-orange-tint: oklch(0.746 0.156 55.642 / 0.14);
+  --dpc-color-danger: oklch(0.666 0.18 21.433);
+  --dpc-color-red: oklch(0.666 0.18 21.433);
+  --dpc-color-red-tint: oklch(0.666 0.18 21.433 / 0.14);
+  --dpc-color-danger-hover: oklch(0.621 0.192 23.042);
+  --dpc-color-info: oklch(0.68 0.173 253.301);
+  --dpc-color-text: oklch(0.964 0.002 247.839);
+  --dpc-color-text-secondary: oklch(0.731 0.008 260.731);
+  --dpc-color-text-inverse: oklch(0.99 0 0);
+  --dpc-color-border: oklch(0.308 0.006 258.354);
+  --dpc-color-border-hover: oklch(0.356 0.007 264.474);
+  --dpc-color-surface-muted: oklch(0.231 0.004 264.487);
+  --dpc-color-active-soft: oklch(0.68 0.173 253.301 / 0.16);
+  --dpc-color-bubble-user: oklch(0.626 0.205 254.947);
+  --dpc-color-bubble-assistant: oklch(0.243 0.004 264.492);
+  --dpc-color-scrim: oklch(0 0 0 / 0.6);
+  --dpc-color-hover-soft: oklch(1 0 0 / 0.06);
+  --dpc-color-tooltip-bg: oklch(0.182 0.004 264.459);
+  --dpc-color-tooltip-fg: oklch(0.964 0.002 247.839);
+  --dpc-color-tooltip-muted: oklch(0.731 0.008 260.731);
+  --dpc-color-tooltip-border: oklch(0.308 0.006 258.354);
+  /* 暗色下描边改为低透明度亮线，与平滑阴影融为一条连续边缘 */
+  --dpc-shadow-hairline: 0 0 0 1px oklch(1 0 0 / 0.08);
+  --dpc-shadow-btn: 0 0 0 1px oklch(1 0 0 / 0.1), 0 1px 2px oklch(0 0 0 / 0.3);
+  --dpc-shadow-card:
+    0 0 0 1px oklch(1 0 0 / 0.11), 0 1px 2px oklch(0 0 0 / 0.2), 0 2px 6px oklch(0 0 0 / 0.2);
+  --dpc-shadow-raised: 0 0 0 1px oklch(1 0 0 / 0.13), 0 2px 10px oklch(0 0 0 / 0.22);
+  --dpc-shadow-overlay: 0 0 0 1px oklch(1 0 0 / 0.15), 0 8px 28px oklch(0 0 0 / 0.34);
 }
 
 *,
@@ -129,5 +210,128 @@ a {
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes dpc-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dpc-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dpc-shimmer-text {
+  from {
+    background-position: 150% center;
+  }
+  to {
+    background-position: -50% center;
+  }
+}
+
+@keyframes dpc-pixel-on {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+@keyframes dpc-caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ── 与 beautiful-ui 对齐的通用工具类 ───────────────────── */
+
+/* 小卡片统一内边距，避免各组件手调 10/12/14px */
+.dpc-card-pad {
+  padding: 12px;
+}
+
+.dpc-card-bar {
+  padding: 10px 12px;
+}
+
+.dpc-card-footer {
+  padding: 10px;
+}
+
+.dpc-icon-button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--dpc-radius-control);
+}
+
+.dpc-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.dpc-mono {
+  font-family: var(--dpc-font-mono);
+}
+
+/* 悬停时从左向右展开下划线 */
+.dpc-animated-underline {
+  position: relative;
+  text-decoration: none;
+}
+
+.dpc-animated-underline::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  content: '';
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 280ms var(--dpc-ease-in-out-strong);
+}
+
+.dpc-animated-underline:hover::after,
+.dpc-animated-underline:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* 来源头像的一圈描边，亮/暗各一套 */
+.dpc-source-avatar {
+  box-shadow: 0 0 0 1px oklch(0.21 0.034 263.436 / 0.1);
+}
+
+[data-dpc-theme='dark'] .dpc-source-avatar {
+  box-shadow: 0 0 0 1px oklch(1 0 0 / 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dpc-animated-underline::after {
+    transition: none;
   }
 }

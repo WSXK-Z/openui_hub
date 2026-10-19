@@ -1,6 +1,16 @@
 // 组件聚合：与 MateChat 组件族对应的聊天组件（Attachment/Bubble/FileList/Header/
 // Introduction/Layout/List/Locale/MarkdownCard/Mention/PopperTrigger/Prompt/Sender/Toolbar）
+// 以及 Agent 交互原语（ApprovalCard/ContextCards/LoadingState/PromptBar/StreamingText/
+// TaskRows/ThinkingState/ToolChips，设计语言对齐 beautiful-ui）
+export * from './ApprovalCard'
 export * from './Attachment'
+export * from './ContextCards'
+export * from './LoadingState'
+export * from './PromptBar'
+export * from './StreamingText'
+export * from './TaskRows'
+export * from './ThinkingState'
+export * from './ToolChips'
 export * from './Bubble'
 export * from './Config'
 export * from './FileList'

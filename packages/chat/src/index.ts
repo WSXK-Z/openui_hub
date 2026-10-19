@@ -4,10 +4,12 @@ import './styles/index.css'
 
 import type { Plugin } from 'vue'
 import {
+  DpcApprovalCard,
   DpcAttachment,
   DpcBubble,
   DpcBubbleLoading,
   DpcConfigProvider,
+  DpcContextCards,
   DpcFileList,
   DpcHeader,
   DpcIntroduction,
@@ -17,12 +19,18 @@ import {
   DpcLayoutHeader,
   DpcLayoutSender,
   DpcList,
+  DpcLoadingState,
   DpcLocale,
   DpcMarkdownCard,
   DpcMention,
   DpcPopperTrigger,
   DpcPrompt,
+  DpcPromptBar,
   DpcSender,
+  DpcStreamingText,
+  DpcTaskRows,
+  DpcThinkingState,
+  DpcToolChips,
   DpcToolbar,
 } from './components'
 import { createInstaller } from '@dp_ui/core'
@@ -49,6 +57,15 @@ const components = [
   DpcMarkdownCard,
   DpcMention,
   DpcPopperTrigger,
+  // Agent 交互原语（设计语言对齐 beautiful-ui）
+  DpcLoadingState,
+  DpcThinkingState,
+  DpcStreamingText,
+  DpcToolChips,
+  DpcApprovalCard,
+  DpcTaskRows,
+  DpcContextCards,
+  DpcPromptBar,
   // 国际化 / 主题
   DpcLocale,
   DpcConfigProvider,

@@ -21,7 +21,37 @@
 | 对话   | `DpcBubble` `DpcBubbleLoading` `DpcSender` `DpcToolbar`                             | 消息气泡 / 打字指示 / 输入发送器 / 操作工具栏         |
 | 增强   | `DpcAttachment` `DpcFileList` `DpcMention` `DpcPopperTrigger`                       | 附件选择 / 附件列表 / @提及候选 / 浮层触发器          |
 | 内容   | `DpcMarkdownCard`                                                                   | Markdown 卡片（v1：代码块 + 纯文本；完整渲染待增强）  |
+| Agent  | `DpcLoadingState` `DpcThinkingState` `DpcStreamingText` `DpcToolChips`              | 加载态 / 思考追踪 / 流式正文 / 工具调用与 diff        |
+| Agent  | `DpcApprovalCard` `DpcTaskRows` `DpcContextCards` `DpcPromptBar`                    | 人在环问答 / 任务状态 / 检索分块 / 输入条             |
 | 国际化 | `DpcLocale` `useDpcLocale`                                                          | zh-CN / en-US，可局部覆盖文案                         |
+
+### Agent 原语（设计语言移植自 beautiful-ui）
+
+`DpcLoadingState`、`DpcThinkingState`、`DpcStreamingText`、`DpcToolChips`、`DpcApprovalCard`、`DpcTaskRows`、`DpcContextCards`、`DpcPromptBar` 的视觉语言移植自 [beautiful-ui](https://github.com/slev12397/beautiful-ui)（MIT）：冷调 oklch 中性色、1px 实色发丝线、分层语义阴影、chip 6 / control 8 / card 10 / window 14 的紧凑圆角，以及 Inter + JetBrains Mono 字体组合。它们与既有组件共用 `{ theme, comp }` 契约和 `--dpc-*` 令牌，不新增运行时依赖。
+
+```vue
+<DpcStreamingText
+  :comp="{
+    content: [{ text: 'Hello' }, { text: '', cite: true }],
+    sources: [{ name: 'Docs', domain: 'example.com', href: 'https://example.com' }],
+    followUps: ['Tell me more'],
+    loop: false,
+  }"
+  @done="onDone"
+  @follow-up="onSend"
+/>
+
+<DpcPromptBar
+  v-model="draft"
+  :comp="{ models: [{ key: 'default', name: 'Default' }], attachments: [] }"
+  @send="onSend"
+/>
+```
+
+- `DpcStreamingText` 暴露 `complete()` / `restart()` / `setCount(n)`，也可关闭 `autoPlay` 由真实 token 流驱动。
+- `DpcThinkingState` / `DpcToolChips` / `DpcTaskRows` / `DpcContextCards` 均支持 `autoPlay: false` 直接展示最终态。
+- `DpcApprovalCard` 单选自动前进、多选等待确认，提交后通过 `submitted` 回传全部答案。
+- 完整示例见 playground 的 `/agent-kit` 路由（`packages/playground/src/pages/AgentKitPage.vue`）。
 
 ## 快速开始
 
@@ -85,6 +115,8 @@ function onSend(content: string) {
 
 ## 设计令牌
 
+令牌采用 beautiful-ui 的视觉体系：`oklch` 冷调蓝灰、实色发丝描边、1px 描边 + 平滑层叠的语义阴影（`--dpc-shadow-hairline/btn/card/raised/overlay`），以及 chip / control / card / window 四级圆角。
+
 - 运行时 CSS 变量由 `@dp_ui/chat/style.css` 注入 `:root`（`--dpc-*`），任意层级可覆盖。
 - UnoCSS 主题令牌通过 preset 继承：
 
@@ -128,7 +160,9 @@ src/
 ├── index.ts              全量入口（import 'uno.css' + 样式 + createInstaller）
 ├── components/           Attachment / Bubble / FileList / Header / Introduction /
 │                         Layout / List / Locale / MarkdownCard / Mention /
-│                         PopperTrigger / Prompt / Sender / Toolbar
+│                         PopperTrigger / Prompt / Sender / Toolbar /
+│                         LoadingState / ThinkingState / StreamingText / ToolChips /
+│                         ApprovalCard / TaskRows / ContextCards / PromptBar
 ├── composables/          useDpcProps（{ theme, comp } 契约）
 ├── internal/             icons（内联 SVG）
 ├── styles/index.css      reset + --dpc-* 变量 + 关键帧
@@ -150,4 +184,5 @@ pnpm --filter @dp_ui/chat build:dist   # 产物（dist/）
 ## 状态与路线
 
 - v0.1 已实现核心聊天闭环（Layout / Header / Bubble / Sender / Toolbar / Introduction / Prompt / List / Locale）。
-- `DpcMarkdownCard` 为精简版（代码块 + 文本）；`DpcMention` 为候选弹层基础版。后续增强：完整 Markdown / 流式输出 / 记忆管理 / 与 @dp_ui/core 基础组件的组合封装。
+- 设计令牌与 8 个 Agent 原语已按 beautiful-ui 视觉体系落地，覆盖思考、流式、工具调用、审批、任务、检索与输入。
+- `DpcMarkdownCard` 为精简版（代码块 + 文本）；`DpcMention` 为候选弹层基础版。后续增强：完整 Markdown / 记忆管理 / 与 @dp_ui/core 基础组件的组合封装。
