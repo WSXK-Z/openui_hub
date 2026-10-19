@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
+import { DpButton } from '@dp_ui/core'
 import DocMenu from './components/DocMenu.vue'
 import { docMenuItems } from './menu'
 
@@ -32,16 +33,14 @@ watch(
         <div class="min-w-0 flex-1">
             <div
                 class="pg-doc__mobile-bar sticky top-14 z-30 flex items-center justify-between gap-3 border-b border-[var(--dp-color-border,#e4e6eb)] bg-[var(--dp-color-surface,#fff)] px-4 py-2 lg:hidden">
-                <button type="button"
-                    class="inline-flex items-center gap-1.5 rounded-[var(--dp-radius-sm,6px)] border border-[var(--dp-color-border,#e4e6eb)] bg-transparent px-2.5 py-1 text-[13px] text-[var(--dp-color-fg,#1b1e26)]"
-                    :aria-expanded="showMobileMenu" aria-controls="pg-doc-mobile-menu"
-                    @click="showMobileMenu = !showMobileMenu">
+                <DpButton :theme="{ size: 'small', ghost: true }" :aria-expanded="showMobileMenu"
+                    aria-controls="pg-doc-mobile-menu" @click="showMobileMenu = !showMobileMenu">
                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
                         stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
                         <path d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                     组件导航
-                </button>
+                </DpButton>
                 <span class="truncate text-[13px] text-[var(--dp-color-fg-2,#3b404d)]">{{ activeLabel }}</span>
             </div>
 

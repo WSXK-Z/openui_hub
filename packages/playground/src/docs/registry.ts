@@ -831,13 +831,356 @@ const rawDocs: RawComponentDoc[] = [
         name: "ConfigProvider",
         zh: "配置",
         group: "能力 Capability",
-        desc: "配置组件通过 comp.themeOverrides 覆盖子树内的 --dp-* CSS 变量，实现局部主题定制。",
+        desc: "配置组件用纯数据参数（主题、令牌覆盖、模式）提供主题作用域，默认值来自 app.use(DpUi, options) 的全局配置；组件不依赖其他主题组件。",
         demos: [
             {
                 id: "config-provider-basic",
                 title: "主题覆盖",
                 desc: "覆盖主色与圆角后，子树内组件自动生效。",
                 file: "config-provider/ConfigProviderBasic",
+            },
+            {
+                id: "config-provider-theme",
+                title: "主题模式",
+                desc: "comp.mode 设置初始主题，主题切换组件修改后整棵子树同步变化。",
+                file: "config-provider/ConfigProviderTheme",
+            },
+            {
+                id: "config-provider-function",
+                title: "函数式令牌",
+                desc: "子组件在 setup 中调用 useTheme({ themeOverrides }) 追加局部令牌覆盖，模式仍由 Provider 托管。",
+                file: "config-provider/ConfigProviderFunction",
+            },
+        ],
+        api: [
+            {
+                title: "Props · comp",
+                rows: [
+                    {
+                        name: "themes",
+                        type: "Record<string, DpThemeDefinition>",
+                        def: "{ default: {} }",
+                        desc: "托管的命名主题；不传时使用全局配置",
+                    },
+                    {
+                        name: "theme",
+                        type: "string",
+                        def: "''",
+                        desc: "受控的当前主题名",
+                    },
+                    {
+                        name: "defaultTheme",
+                        type: "string",
+                        def: "'default'",
+                        desc: "默认主题名；不存在时取第一个主题",
+                    },
+                    {
+                        name: "themeOverrides",
+                        type: "DpThemeOverrides",
+                        def: "{}",
+                        desc: "令牌覆盖，键省略 --dp- 前缀；IDE 提示内置令牌键与 CSS 值",
+                    },
+                    {
+                        name: "mode",
+                        type: "'light' | 'dark' | 'system' | ''",
+                        def: "''",
+                        desc: "显式主题模式；空字符串使用持久化值或 defaultMode",
+                    },
+                    {
+                        name: "defaultMode",
+                        type: "'light' | 'dark' | 'system'",
+                        def: "'system'",
+                        desc: "没有显式模式与持久化值时使用的模式",
+                    },
+                    {
+                        name: "persist",
+                        type: "boolean",
+                        def: "true",
+                        desc: "是否把模式写入 localStorage",
+                    },
+                    {
+                        name: "storageKey",
+                        type: "string",
+                        def: "'dp-ui-theme'",
+                        desc: "localStorage 键名",
+                    },
+                    {
+                        name: "applyTo",
+                        type: "'self' | 'document'",
+                        def: "'self'",
+                        desc: "应用到子树，或写入 document.documentElement（Portal 浮层需要）",
+                    },
+                ],
+            },
+            {
+                title: "Events",
+                rows: [
+                    {
+                        name: "change",
+                        type: "(mode: DpThemeMode, resolved: 'light' | 'dark') => void",
+                        desc: "模式变化时触发",
+                    },
+                ],
+            },
+            {
+                title: "useTheme(options) · 函数式",
+                rows: [
+                    {
+                        name: "themeOverrides",
+                        type: "DpThemeOverrides",
+                        desc: "令牌覆盖，写入当前组件根元素；主题名与模式仍由 DpThemeProvider 托管",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        path: "theme-provider",
+        name: "ThemeProvider",
+        zh: "主题提供器",
+        group: "主题 Theme",
+        desc: "主题提供器托管多个命名主题，是 useTheme 及其主题组件必需的作用域。主题定义支持 overrides（TS 内联令牌）与 className（样式块内写令牌），切换主题后整棵子树立即更新。",
+        demos: [
+            {
+                id: "theme-provider-basic",
+                title: "多主题切换",
+                desc: "comp.themes 注册多个主题；子组件通过 useTheme 读取 themeNames 并调用 setTheme。",
+                file: "theme-provider/ThemeProviderBasic",
+            },
+            {
+                id: "theme-provider-mode",
+                title: "主题自带模式",
+                desc: "主题定义可声明 mode，激活时同步切换浅色 / 深色；主题切换组件仍可继续改模式。",
+                file: "theme-provider/ThemeProviderMode",
+            },
+            {
+                id: "theme-provider-css",
+                title: "CSS 类主题",
+                desc: "主题定义只给 className，令牌写在 <style> 块中，编辑时可用 CSS 补全与取色器。",
+                file: "theme-provider/ThemeProviderCss",
+            },
+        ],
+        api: [
+            {
+                title: "Props · comp",
+                rows: [
+                    {
+                        name: "themes",
+                        type: "Record<string, DpThemeDefinition>",
+                        def: "{ default: {} }",
+                        desc: "托管的命名主题",
+                    },
+                    {
+                        name: "theme",
+                        type: "string",
+                        def: "''",
+                        desc: "受控的当前主题名",
+                    },
+                    {
+                        name: "defaultTheme",
+                        type: "string",
+                        def: "'default'",
+                        desc: "非受控默认主题名；不存在时取第一个主题",
+                    },
+                    {
+                        name: "themeOverrides",
+                        type: "DpThemeOverrides",
+                        def: "{}",
+                        desc: "叠加在所有主题之上的令牌覆盖；IDE 提示内置令牌键",
+                    },
+                    {
+                        name: "mode",
+                        type: "'light' | 'dark' | 'system' | ''",
+                        def: "''",
+                        desc: "显式模式；空字符串使用主题定义或持久化值",
+                    },
+                    {
+                        name: "defaultMode",
+                        type: "'light' | 'dark' | 'system'",
+                        def: "'system'",
+                        desc: "没有显式模式与持久化值时使用的模式",
+                    },
+                    {
+                        name: "persist",
+                        type: "boolean",
+                        def: "true",
+                        desc: "是否把模式写入 localStorage",
+                    },
+                    {
+                        name: "storageKey",
+                        type: "string",
+                        def: "'dp-ui-theme'",
+                        desc: "localStorage 键名",
+                    },
+                    {
+                        name: "applyTo",
+                        type: "'self' | 'document'",
+                        def: "'self'",
+                        desc: "应用到子树，或写入 document.documentElement（Portal 浮层需要）",
+                    },
+                ],
+            },
+            {
+                title: "DpThemeDefinition",
+                rows: [
+                    {
+                        name: "overrides",
+                        type: "DpThemeOverrides",
+                        desc: "该主题的令牌覆盖，键省略 --dp- 前缀；IDE 提示内置令牌键",
+                    },
+                    {
+                        name: "className",
+                        type: "string",
+                        desc: "该主题的 CSS 类名，类中书写 --dp-* 变量（样式块内有完整 CSS 补全与取色器）",
+                    },
+                    {
+                        name: "mode",
+                        type: "'light' | 'dark' | 'system'",
+                        desc: "激活该主题时切换到的模式",
+                    },
+                ],
+            },
+            {
+                title: "Events",
+                rows: [
+                    {
+                        name: "change",
+                        type: "(theme: string, mode: DpThemeMode, resolved: 'light' | 'dark') => void",
+                        desc: "主题或模式变化时触发",
+                    },
+                ],
+            },
+            {
+                title: "useTheme()",
+                rows: [
+                    {
+                        name: "theme",
+                        type: "Ref<string>",
+                        desc: "当前主题名",
+                    },
+                    {
+                        name: "themes",
+                        type: "Ref<Record<string, DpThemeDefinition>>",
+                        desc: "全部托管主题",
+                    },
+                    {
+                        name: "themeNames",
+                        type: "ComputedRef<string[]>",
+                        desc: "全部主题名",
+                    },
+                    {
+                        name: "setTheme",
+                        type: "(theme: string) => void",
+                        desc: "切换主题；必须在 DpThemeProvider 内使用",
+                    },
+                    {
+                        name: "themeOverrides",
+                        type: "DpThemeOverrides",
+                        desc: "当前生效的令牌覆盖（主题定义 + 上层覆盖）",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        path: "theme-switch",
+        name: "ThemeSwitch",
+        zh: "主题切换",
+        group: "主题 Theme",
+        desc: "主题切换组件提供浅色 / 深色 / 跟随系统三段选择，读写最近的主题作用域（DpThemeProvider / DpConfigProvider）中的控制器。",
+        demos: [
+            {
+                id: "theme-switch-basic",
+                title: "基础用法",
+                desc: "三段切换配合子树组件同步变换主题。",
+                file: "theme-switch/ThemeSwitchBasic",
+            },
+            {
+                id: "theme-switch-icon",
+                title: "仅图标",
+                desc: "comp.showLabels 关闭文字标签，保留无障碍名称。",
+                file: "theme-switch/ThemeSwitchIcon",
+            },
+        ],
+        api: [
+            {
+                title: "Props · comp",
+                rows: [
+                    {
+                        name: "showLabels",
+                        type: "boolean",
+                        def: "true",
+                        desc: "是否显示模式文字标签",
+                    },
+                ],
+            },
+            {
+                title: "Props · theme",
+                rows: [
+                    {
+                        name: "size",
+                        type: "'small' | 'medium' | 'large'",
+                        def: "'medium'",
+                        desc: "尺寸",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        path: "theme-toggle",
+        name: "ThemeToggle",
+        zh: "主题开关",
+        group: "主题 Theme",
+        desc: "主题开关是单按钮切换：在浅色与深色之间切换，图标与无障碍名称随当前主题变化；跟随系统模式会被切换为显式模式。",
+        demos: [
+            {
+                id: "theme-toggle-basic",
+                title: "基础用法",
+                desc: "comp.showLabel 在图标旁显示当前主题文字。",
+                file: "theme-toggle/ThemeToggleBasic",
+            },
+            {
+                id: "theme-toggle-round",
+                title: "圆角与自定义文字",
+                desc: "theme.round 使用圆形按钮；comp.label 覆盖默认文字。",
+                file: "theme-toggle/ThemeToggleRound",
+            },
+        ],
+        api: [
+            {
+                title: "Props · comp",
+                rows: [
+                    {
+                        name: "showLabel",
+                        type: "boolean",
+                        def: "false",
+                        desc: "是否显示文字",
+                    },
+                    {
+                        name: "label",
+                        type: "string",
+                        def: "''",
+                        desc: "自定义文字；为空时显示当前主题（浅色 / 深色）",
+                    },
+                ],
+            },
+            {
+                title: "Props · theme",
+                rows: [
+                    {
+                        name: "size",
+                        type: "'small' | 'medium' | 'large'",
+                        def: "'medium'",
+                        desc: "尺寸",
+                    },
+                    {
+                        name: "round",
+                        type: "boolean",
+                        def: "false",
+                        desc: "圆形按钮",
+                    },
+                ],
             },
         ],
     },

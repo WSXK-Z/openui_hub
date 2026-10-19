@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { DpButton } from '@dp_ui/core'
 import { useSiteTheme } from './theme'
 
 const route = useRoute()
@@ -43,8 +44,8 @@ const isDark = computed(() => theme.value === 'dark')
             </nav>
 
             <div class="flex shrink-0 items-center gap-1">
-                <button type="button" class="pg-header__icon" :aria-label="isDark ? '切换到浅色主题' : '切换到深色主题'"
-                    @click="toggleTheme">
+                <DpButton :theme="{ icon: true, ghost: true, size: 'small' }"
+                    :aria-label="isDark ? '切换到浅色主题' : '切换到深色主题'" @click="toggleTheme">
                     <svg v-if="isDark" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
                         stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
                         <circle cx="12" cy="12" r="4" />
@@ -54,7 +55,7 @@ const isDark = computed(() => theme.value === 'dark')
                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
                     </svg>
-                </button>
+                </DpButton>
             </div>
         </div>
     </header>
@@ -71,29 +72,5 @@ const isDark = computed(() => theme.value === 'dark')
 
 .pg-header__link {
     transition: background 140ms ease, color 140ms ease;
-}
-
-.pg-header__icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: 0;
-    border-radius: var(--dp-radius-sm, 6px);
-    background: transparent;
-    color: var(--dp-color-fg-2, #3b404d);
-    cursor: pointer;
-    transition: background 140ms ease, color 140ms ease;
-}
-
-.pg-header__icon:hover {
-    background: var(--dp-color-surface-2, #f4f5f7);
-    color: var(--dp-color-fg, #1b1e26);
-}
-
-.pg-header__icon:focus-visible {
-    outline: none;
-    box-shadow: var(--dp-shadow-focus, 0 0 0 3px color-mix(in oklch, var(--dp-color-accent, #3364f0) 22%, transparent));
 }
 </style>

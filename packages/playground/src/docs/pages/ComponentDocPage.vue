@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { DpButton, DpEmpty } from '@dp_ui/core'
+import { DpButton, DpCard, DpEmpty } from '@dp_ui/core'
 import DemoCard from '../components/DemoCard.vue'
 import DemoGrid from '../components/DemoGrid.vue'
 import DocAnchor from '../components/DocAnchor.vue'
@@ -61,22 +61,22 @@ watchEffect(() => {
             </section>
 
             <nav class="mt-14 grid grid-cols-1 gap-3 sm:grid-cols-2" aria-label="相邻组件">
-                <RouterLink v-if="neighbors.prev" :to="`/docs/${neighbors.prev.path}`"
-                    class="group rounded-[var(--dp-radius-md,10px)] border border-[var(--dp-color-border,#e4e6eb)] bg-[var(--dp-color-surface,#fff)] p-4 no-underline transition-colors hover:border-[var(--dp-color-accent,#3364f0)]">
-                    <div class="text-xs text-[var(--dp-color-fg-2,#3b404d)]">← 上一页</div>
-                    <div
-                        class="mt-1 text-sm font-medium text-[var(--dp-color-fg,#1b1e26)] group-hover:text-[var(--dp-color-accent,#3364f0)]">
-                        {{ neighbors.prev.name }} {{ neighbors.prev.zh }}
-                    </div>
+                <RouterLink v-if="neighbors.prev" :to="`/docs/${neighbors.prev.path}`" class="no-underline">
+                    <DpCard :comp="{ hoverable: true, padding: 'small' }" class="h-full">
+                        <div class="text-xs text-[var(--dp-color-fg-2)]">← 上一页</div>
+                        <div class="mt-1 text-sm font-medium text-[var(--dp-color-fg)]">
+                            {{ neighbors.prev.name }} {{ neighbors.prev.zh }}
+                        </div>
+                    </DpCard>
                 </RouterLink>
                 <span v-else />
-                <RouterLink v-if="neighbors.next" :to="`/docs/${neighbors.next.path}`"
-                    class="group rounded-[var(--dp-radius-md,10px)] border border-[var(--dp-color-border,#e4e6eb)] bg-[var(--dp-color-surface,#fff)] p-4 text-right no-underline transition-colors hover:border-[var(--dp-color-accent,#3364f0)]">
-                    <div class="text-xs text-[var(--dp-color-fg-2,#3b404d)]">下一页 →</div>
-                    <div
-                        class="mt-1 text-sm font-medium text-[var(--dp-color-fg,#1b1e26)] group-hover:text-[var(--dp-color-accent,#3364f0)]">
-                        {{ neighbors.next.name }} {{ neighbors.next.zh }}
-                    </div>
+                <RouterLink v-if="neighbors.next" :to="`/docs/${neighbors.next.path}`" class="no-underline">
+                    <DpCard :comp="{ hoverable: true, padding: 'small' }" class="h-full text-right">
+                        <div class="text-xs text-[var(--dp-color-fg-2)]">下一页 →</div>
+                        <div class="mt-1 text-sm font-medium text-[var(--dp-color-fg)]">
+                            {{ neighbors.next.name }} {{ neighbors.next.zh }}
+                        </div>
+                    </DpCard>
                 </RouterLink>
             </nav>
         </div>

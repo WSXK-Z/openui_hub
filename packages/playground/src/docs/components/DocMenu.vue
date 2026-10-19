@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { DpTag } from '@dp_ui/core'
 import { docMenuGroups } from '../menu'
 import { hasComponentDoc } from '../registry'
 
@@ -45,10 +46,10 @@ watch(
                             : 'text-[var(--dp-color-fg-2,#3b404d)]'">
                         {{ item.zh }}
                     </span>
-                    <span v-if="!hasComponentDoc(item.path)"
-                        class="shrink-0 rounded-[3px] bg-[var(--dp-color-surface-3,#eceef1)] px-1 text-[10px] leading-[16px] text-[var(--dp-color-fg-2,#3b404d)]">
+                    <DpTag v-if="!hasComponentDoc(item.path)" :theme="{ size: 'small' }"
+                        class="!px-1 !text-[10px] shrink-0">
                         WIP
-                    </span>
+                    </DpTag>
                 </RouterLink>
             </div>
         </section>

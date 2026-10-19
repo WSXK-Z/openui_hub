@@ -91,6 +91,14 @@ export const docMenuGroups: DocMenuGroup[] = [
         ],
     },
     {
+        label: "主题 Theme",
+        items: [
+            { name: "ThemeProvider", zh: "主题提供器", path: "theme-provider" },
+            { name: "ThemeSwitch", zh: "主题切换", path: "theme-switch" },
+            { name: "ThemeToggle", zh: "主题开关", path: "theme-toggle" },
+        ],
+    },
+    {
         label: "页面结构 Page Structure",
         items: [
             { name: "LayoutBasic", zh: "基础布局", path: "layout-basic" },
